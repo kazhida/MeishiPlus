@@ -22,7 +22,7 @@ kotlin {
     jvm()
 
     androidLibrary {
-        namespace = "com.abplua.meishiplus.shared"
+        namespace = "com.abplus.meishiplus.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 

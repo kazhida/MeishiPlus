@@ -21,9 +21,17 @@ dependencies {
     implementation(projects.shared)
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui)
     implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
     implementation(libs.hilt.android)
+    implementation(libs.kotlinx.coroutines.play.services)
     ksp(libs.hilt.compiler)
 
     implementation(libs.compose.uiToolingPreview)
@@ -31,11 +39,11 @@ dependencies {
 }
 
 android {
-    namespace = "com.abplua.meishiplus"
+    namespace = "com.abplus.meishiplus"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.abplua.meishiplus"
+        applicationId = "com.abplus.meishiplus"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

@@ -10,6 +10,7 @@
 		11A000000000000000000001 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 11A000000000000000000101 /* FirebaseAuth */; };
 		11A000000000000000000002 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 11A000000000000000000102 /* FirebaseCore */; };
 		11A000000000000000000003 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 11A000000000000000000103 /* GoogleSignIn */; };
+		11A000000000000000000004 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 11A000000000000000000104 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,6 +51,7 @@
 				11A000000000000000000001 /* FirebaseAuth in Frameworks */,
 				11A000000000000000000002 /* FirebaseCore in Frameworks */,
 				11A000000000000000000003 /* GoogleSignIn in Frameworks */,
+				11A000000000000000000004 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -97,6 +99,7 @@
 				11A000000000000000000101 /* FirebaseAuth */,
 				11A000000000000000000102 /* FirebaseCore */,
 				11A000000000000000000103 /* GoogleSignIn */,
+				11A000000000000000000104 /* FirebaseFirestore */,
 			);
 			productName = iosApp;
 			productReference = 84B787112921830A9B8770DB /* MeishiPlus.app */;
@@ -419,6 +422,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 11A000000000000000000202 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
+		};
+		11A000000000000000000104 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 11A000000000000000000201 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

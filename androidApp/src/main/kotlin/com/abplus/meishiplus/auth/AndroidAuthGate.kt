@@ -2,6 +2,7 @@ package com.abplus.meishiplus.auth
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,8 +31,12 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
+import androidx.credentials.exceptions.GetCredentialUnsupportedException
+import androidx.credentials.exceptions.NoCredentialException
 import com.abplus.meishiplus.App
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.google.firebase.auth.FirebaseAuth
@@ -158,12 +163,12 @@ private suspend fun signInWithGoogle(
     val activity = context as? Activity ?: error("ログインにはActivityコンテキストが必要です。")
     val webClientId = context.defaultWebClientId()
 
-    val googleIdOption = GetGoogleIdOption.Builder()
-        .setServerClientId(webClientId)
-        .setFilterByAuthorizedAccounts(false)
+    val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(
+        serverClientId = webClientId,
+    )
         .build()
     val request = GetCredentialRequest.Builder()
-        .addCredentialOption(googleIdOption)
+        .addCredentialOption(signInWithGoogleOption)
         .build()
 
     val result = credentialManager.getCredential(
@@ -213,6 +218,13 @@ private fun FirebaseUser.toAuthUser(): AuthUser =
 
 private fun Throwable.userMessage(): String =
     when (this) {
-        is GetCredentialException -> "Googleアカウントの選択が完了しませんでした。"
+        is GetCredentialCancellationException -> "Googleログインがキャンセルされました。"
+        is NoCredentialException -> "端末に利用可能なGoogleアカウントが見つかりませんでした。Google Play開発者サービスと端末のGoogleアカウントを確認してください。"
+        is GetCredentialProviderConfigurationException -> "Credential Managerのプロバイダ設定に問題があります。Google Play開発者サービスを更新してください。"
+        is GetCredentialUnsupportedException -> "この端末はCredential ManagerのGoogleログインに対応していません。"
+        is GetCredentialException -> {
+            Log.e("AndroidAuthGate", "Google credential request failed", this)
+            localizedMessage ?: "Googleアカウントの選択が完了しませんでした。"
+        }
         else -> localizedMessage ?: "Googleログインに失敗しました。"
     }

@@ -19,7 +19,6 @@ import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
@@ -30,15 +29,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.abplus.meishiplus.auth.AuthUser
+import com.abplus.meishiplus.data.entities.CardEntity
+import com.abplus.meishiplus.ui.components.CardEntry
 import com.abplus.meishiplus.ui.components.ProfileHeader
 import kotlinx.coroutines.launch
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.ic_badge
 import meishiplus.shared.generated.resources.ic_home
+import meishiplus.shared.generated.resources.ic_logout
 import meishiplus.shared.generated.resources.ic_menu
 import meishiplus.shared.generated.resources.ic_settings
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import kotlin.time.Clock
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,12 +88,18 @@ fun TabPagerScreen(
                     )
                 }
                 if (authUser != null && onSignOut != null) {
-                    TextButton(
+                    NavigationDrawerItem(
+                        icon = {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_logout),
+                                contentDescription = null,
+                            )
+                        },
+                        label = { Text("ログアウト") },
+                        selected = false,
                         onClick = onSignOut,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    ) {
-                        Text("ログアウト")
-                    }
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
                 }
             }
         },
@@ -166,13 +175,13 @@ private fun TabPage(
     title: String,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier.padding(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "$title ページ",
-            style = MaterialTheme.typography.headlineMedium,
-        )
+    val now = Clock.System.now().toEpochMilliseconds()
+    CardEntity(
+        id = title.hashCode().toString(),
+        name = title,
+        createdAt = now,
+        updatedAt = now,
+    ).let { cardEntity ->
+        CardEntry(cardEntity = cardEntity, onCardChange = {})
     }
 }

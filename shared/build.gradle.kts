@@ -40,8 +40,14 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.firestore)
+            implementation(libs.kotlinx.coroutines.play.services)
+            implementation(libs.ktor.client.android)
         }
         commonMain.dependencies {
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -51,6 +57,12 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.serialization.json)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
+        jvmMain.dependencies {
+            implementation(libs.ktor.client.java)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

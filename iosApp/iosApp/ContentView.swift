@@ -7,6 +7,8 @@ import UIKit
 
 struct ComposeView: UIViewControllerRepresentable {
     let authUser: AuthUser
+    let userRepository: UserRepository
+    let cardRepository: CardRepository
     let onSignOut: () -> Void
 
     func makeUIViewController(context: Self.Context) -> UIViewController {
@@ -14,7 +16,9 @@ struct ComposeView: UIViewControllerRepresentable {
             authUser: authUser,
             onSignOut: {
                 onSignOut()
-            }
+            },
+            userRepository: userRepository,
+            cardRepository: cardRepository
         )
     }
 
@@ -24,12 +28,16 @@ struct ComposeView: UIViewControllerRepresentable {
 
 struct ContentView: View {
     @StateObject private var authModel = FirebaseAuthModel()
+    private let userRepository = FireStoreUserRepository()
+    private let cardRepository = FireStoreCardRepository()
 
     var body: some View {
         Group {
             if let user = authModel.currentUser {
                 ComposeView(
                     authUser: user,
+                    userRepository: userRepository,
+                    cardRepository: cardRepository,
                     onSignOut: authModel.signOut
                 )
                 .ignoresSafeArea()

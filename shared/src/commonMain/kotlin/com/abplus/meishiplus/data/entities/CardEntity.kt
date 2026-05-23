@@ -2,6 +2,7 @@ package com.abplus.meishiplus.data.entities
 
 data class CardEntity(
     val id: String = "",
+    val ownerUid: String = "",
     val name: String = "",
     val email: String = "",
     val address: String = "",
@@ -11,4 +12,10 @@ data class CardEntity(
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
     val partnerIds: List<String> = emptyList()
-)
+) {
+    companion object {
+        const val DEFAULT_ID = "default"
+
+        fun default() = CardEntity(id = DEFAULT_ID)
+    }
+}

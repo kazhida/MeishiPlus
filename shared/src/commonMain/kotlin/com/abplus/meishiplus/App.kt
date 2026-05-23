@@ -3,6 +3,7 @@ package com.abplus.meishiplus
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.repositories.AppRepositories
@@ -19,13 +20,15 @@ fun App(
     userRepository: UserRepository? = null,
     cardRepository: CardRepository? = null,
 ) {
-    val repositories = if (userRepository != null && cardRepository != null) {
-        AppRepositories(
-            userRepository = userRepository,
-            cardRepository = cardRepository,
-        )
-    } else {
-        null
+    val repositories = remember(userRepository, cardRepository) {
+        if (userRepository != null && cardRepository != null) {
+            AppRepositories(
+                userRepository = userRepository,
+                cardRepository = cardRepository,
+            )
+        } else {
+            null
+        }
     }
 
     MaterialTheme {

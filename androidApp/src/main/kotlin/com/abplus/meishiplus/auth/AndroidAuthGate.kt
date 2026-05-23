@@ -36,6 +36,8 @@ import androidx.credentials.exceptions.GetCredentialProviderConfigurationExcepti
 import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.exceptions.NoCredentialException
 import com.abplus.meishiplus.App
+import com.abplus.meishiplus.data.repositories.firestore.FireStoreCardRepository
+import com.abplus.meishiplus.data.repositories.firestore.FireStoreUserRepository
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -50,6 +52,8 @@ fun AndroidAuthGate() {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val credentialManager = remember { CredentialManager.create(context) }
+    val userRepository = remember { FireStoreUserRepository() }
+    val cardRepository = remember { FireStoreCardRepository() }
     val coroutineScope = rememberCoroutineScope()
     var currentUser by remember { mutableStateOf(auth.currentUser?.toAuthUser()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -75,6 +79,8 @@ fun AndroidAuthGate() {
                     currentUser = null
                 }
             },
+            userRepository = userRepository,
+            cardRepository = cardRepository,
         )
         return
     }

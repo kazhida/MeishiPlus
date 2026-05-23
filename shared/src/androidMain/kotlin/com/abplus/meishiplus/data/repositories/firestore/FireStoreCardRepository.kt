@@ -10,6 +10,15 @@ class FireStoreCardRepository(
 ) : CardRepository {
     private val cards = firestore.collection(CARDS_COLLECTION)
 
+    override suspend fun addCard(card: CardEntity): CardEntity {
+        val document = cards.document()
+        val cardWithId = card.copy(id = document.id)
+        document
+            .set(cardWithId)
+            .await()
+        return cardWithId
+    }
+
     override suspend fun getCard(id: String): CardEntity =
         cards.document(id)
             .get()

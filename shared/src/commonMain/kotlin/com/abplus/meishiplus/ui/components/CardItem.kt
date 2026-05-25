@@ -1,7 +1,6 @@
 package com.abplus.meishiplus.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,7 +19,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -56,13 +54,7 @@ fun CardItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                InitialMark(
-                    name = cardEntity.name.value,
-                    modifier = Modifier.size(56.dp),
-                )
-
                 Column(
                     modifier = Modifier.weight(1f),
                 ) {
@@ -120,28 +112,6 @@ fun CardItem(
                     modifier = Modifier.size(20.dp),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun InitialMark(
-    name: String,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier.clip(MaterialTheme.shapes.medium),
-        color = Color(0xFF00AFAF),
-        contentColor = Color.White,
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = name.firstOrNull()?.toString().orEmpty(),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
         }
     }
 }

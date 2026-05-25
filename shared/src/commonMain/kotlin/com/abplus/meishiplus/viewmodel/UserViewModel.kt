@@ -118,6 +118,39 @@ class UserViewModel(
         }
     }
 
+    fun updateCardAndReloadUser(card: CardEntity) {
+        val uid = _uiState.value.authUser?.uid ?: return
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                )
+            }
+
+            runCatching {
+                cardRepository.updateCard(card)
+                initializeUser(uid)
+            }.onSuccess { appUser ->
+                _uiState.update {
+                    it.copy(
+                        appUser = appUser,
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = throwable.message ?: "名刺情報を更新できませんでした。",
+                    )
+                }
+            }
+        }
+    }
+
     private fun loadAppUser(uid: String) {
         viewModelScope.launch {
             runCatching {

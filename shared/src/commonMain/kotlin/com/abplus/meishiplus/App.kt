@@ -2,10 +2,12 @@ package com.abplus.meishiplus
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -78,6 +80,12 @@ fun App(
                     id = cardIndex.toString(),
                     name = CardEntity.CardElement("名刺${cardIndex + 1}"),
                 )
+                val latestCard by rememberUpdatedState(card)
+                DisposableEffect(cardIndex, effectiveUserViewModel) {
+                    onDispose {
+                        effectiveUserViewModel?.updateCardAndReloadUser(latestCard)
+                    }
+                }
                 CardEntryScreen(
                     cardEntity = card,
                     onCardChange = { updatedCard ->

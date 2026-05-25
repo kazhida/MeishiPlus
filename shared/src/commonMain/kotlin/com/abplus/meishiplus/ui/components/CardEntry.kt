@@ -14,11 +14,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.abplus.meishiplus.data.entities.CardEntity
 
@@ -36,6 +44,11 @@ fun CardEntry(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         EntrySection(title = "基本情報") {
+            EntryTextField(
+                value = cardEntity.caption,
+                onValueChange = { onCardChange(cardEntity.copy(caption = it)) },
+                label = "タブ見出し",
+            )
             EntryTextField(
                 value = cardEntity.name.value,
                 onValueChange = { onCardChange(cardEntity.copy(name = cardEntity.name.copy(value = it))) },
@@ -113,12 +126,37 @@ private fun EntryTextField(
     supportingText: String? = null,
 ) {
     val focusManager = LocalFocusManager.current
+    var textFieldValue by remember {
+        mutableStateOf(TextFieldValue(value))
+    }
+
+    LaunchedEffect(value) {
+        if (value != textFieldValue.text) {
+            textFieldValue = textFieldValue.copy(
+                text = value,
+                selection = TextRange(value.length),
+            )
+        }
+    }
 
     OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
+        value = textFieldValue,
+        onValueChange = { newValue ->
+            textFieldValue = newValue
+            if (newValue.text != value) {
+                onValueChange(newValue.text)
+            }
+        },
         label = { Text(label) },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .onFocusChanged { focusState ->
+                if (focusState.isFocused) {
+                    textFieldValue = textFieldValue.copy(
+                        selection = TextRange(0, textFieldValue.text.length),
+                    )
+                }
+            },
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
             imeAction = imeAction,

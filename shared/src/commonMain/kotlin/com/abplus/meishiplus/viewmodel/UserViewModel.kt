@@ -3,6 +3,7 @@ package com.abplus.meishiplus.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abplus.meishiplus.auth.AuthUser
+import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
@@ -102,6 +103,18 @@ class UserViewModel(
                     it.copy(errorMessage = toErrorMessage(throwable))
                 }
             }
+        }
+    }
+
+    fun updateCard(cardIndex: Int, card: CardEntity) {
+        _uiState.update { state ->
+            val appUser = state.appUser ?: return@update state
+            if (cardIndex !in appUser.cards.indices) return@update state
+
+            val updatedCards = appUser.cards.toMutableList().apply {
+                this[cardIndex] = card
+            }
+            state.copy(appUser = appUser.copy(cards = updatedCards))
         }
     }
 

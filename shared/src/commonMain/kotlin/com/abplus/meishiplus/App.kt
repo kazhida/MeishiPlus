@@ -7,14 +7,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.abplus.meishiplus.auth.AuthUser
+import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
+import com.abplus.meishiplus.ui.screens.CardEntryScreen
 import com.abplus.meishiplus.ui.screens.TabPagerScreen
 import com.abplus.meishiplus.viewmodel.UserUiState
 import com.abplus.meishiplus.viewmodel.UserViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.serialization.Serializable
 
 @Composable
 @Preview
@@ -23,11 +30,12 @@ fun App(
     appUser: AppUser? = null,
     errorMessage: String? = null,
     onSignOut: (() -> Unit)? = null,
+    userViewModel: UserViewModel? = null,
     userRepository: UserRepository? = null,
     cardRepository: CardRepository? = null,
 ) {
     val fallbackUserState = remember { MutableStateFlow(UserUiState()) }
-    val userViewModel = remember(userRepository, cardRepository) {
+    val ownedUserViewModel = remember(userRepository, cardRepository) {
         if (userRepository != null && cardRepository != null) {
             UserViewModel(
                 userRepository = userRepository,
@@ -37,21 +45,52 @@ fun App(
             null
         }
     }
-    val userState by (userViewModel?.uiState ?: fallbackUserState).collectAsState()
+    val effectiveUserViewModel = userViewModel ?: ownedUserViewModel
+    val userState by (effectiveUserViewModel?.uiState ?: fallbackUserState).collectAsState()
 
-    LaunchedEffect(userViewModel, authUser?.uid) {
-        userViewModel?.setAuthUser(authUser)
+    LaunchedEffect(effectiveUserViewModel, authUser?.uid) {
+        effectiveUserViewModel?.setAuthUser(authUser)
     }
 
     val effectiveAppUser = appUser ?: userState.appUser
     val effectiveErrorMessage = errorMessage ?: userState.errorMessage
+    val navController = rememberNavController()
 
     MaterialTheme {
-        TabPagerScreen(
-            authUser = authUser,
-            appUser = effectiveAppUser,
-            errorMessage = effectiveErrorMessage,
-            onSignOut = onSignOut,
-        )
+        NavHost(
+            navController = navController,
+            startDestination = HomeRoute,
+        ) {
+            composable<HomeRoute> {
+                TabPagerScreen(
+                    authUser = authUser,
+                    appUser = effectiveAppUser,
+                    errorMessage = effectiveErrorMessage,
+                    onSignOut = onSignOut,
+                    onEditCard = { cardIndex ->
+                        navController.navigate(CardEntryRoute(cardIndex))
+                    },
+                )
+            }
+            composable<CardEntryRoute> { backStackEntry ->
+                val cardIndex = backStackEntry.toRoute<CardEntryRoute>().cardIndex
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity(
+                    id = cardIndex.toString(),
+                    name = CardEntity.CardElement("名刺${cardIndex + 1}"),
+                )
+                CardEntryScreen(
+                    cardEntity = card,
+                    onCardChange = { updatedCard ->
+                        effectiveUserViewModel?.updateCard(cardIndex, updatedCard)
+                    },
+                )
+            }
+        }
     }
 }
+
+@Serializable
+private data object HomeRoute
+
+@Serializable
+private data class CardEntryRoute(val cardIndex: Int)

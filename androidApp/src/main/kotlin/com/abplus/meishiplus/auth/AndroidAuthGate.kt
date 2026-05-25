@@ -77,6 +77,7 @@ fun AndroidAuthGate(userViewModel: UserViewModel) {
             },
             appUser = uiState.appUser,
             errorMessage = uiState.errorMessage,
+            userViewModel = userViewModel,
         )
         return
     }

@@ -55,6 +55,7 @@ fun TabPagerScreen(
     appUser: AppUser? = null,
     errorMessage: String? = null,
     onSignOut: (() -> Unit)? = null,
+    onEditCard: (Int) -> Unit = {},
 ) {
     val cards = appUser?.cards.orEmpty()
     val tabs = if (cards.isNotEmpty()) {
@@ -188,7 +189,9 @@ fun TabPagerScreen(
                         } else {
                             TabPage(
                                 title = tabs[page],
+                                cardIndex = page,
                                 cardEntity = cards.getOrNull(page),
+                                onEditCard = onEditCard,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -207,7 +210,9 @@ private data class DrawerItem(
 @Composable
 private fun TabPage(
     title: String,
+    cardIndex: Int,
     cardEntity: CardEntity?,
+    onEditCard: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val card = cardEntity ?: CardEntity(
@@ -220,6 +225,9 @@ private fun TabPage(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
-        CardItem(cardEntity = card)
+        CardItem(
+            cardEntity = card,
+            onEditClick = { onEditCard(cardIndex) },
+        )
     }
 }

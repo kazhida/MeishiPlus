@@ -55,12 +55,13 @@ final class FireStoreCardRepository: CardRepository {
         [
             "id": card.id,
             "ownerUid": card.ownerUid,
-            "name": card.name,
-            "email": card.email,
-            "address": card.address,
-            "phone": card.phone,
-            "organization": card.organization,
-            "title": card.title,
+            "caption": card.caption,
+            "name": cardElementDictionary(element: card.name),
+            "email": cardElementDictionary(element: card.email),
+            "address": cardElementDictionary(element: card.address),
+            "phone": cardElementDictionary(element: card.phone),
+            "organization": cardElementDictionary(element: card.organization),
+            "title": cardElementDictionary(element: card.title),
             "createdAt": card.createdAt,
             "updatedAt": card.updatedAt,
             "partnerIds": card.partnerIds,
@@ -71,6 +72,7 @@ final class FireStoreCardRepository: CardRepository {
         CardEntity(
             id: id,
             ownerUid: card.ownerUid,
+            caption: card.caption,
             name: card.name,
             email: card.email,
             address: card.address,
@@ -87,12 +89,13 @@ final class FireStoreCardRepository: CardRepository {
         CardEntity(
             id: data["id"] as? String ?? id,
             ownerUid: data["ownerUid"] as? String ?? "",
-            name: data["name"] as? String ?? "",
-            email: data["email"] as? String ?? "",
-            address: data["address"] as? String ?? "",
-            phone: data["phone"] as? String ?? "",
-            organization: data["organization"] as? String ?? "",
-            title: data["title"] as? String ?? "",
+            caption: data["caption"] as? String ?? "",
+            name: cardElement(data["name"], defaultValue: "氏名"),
+            email: cardElement(data["email"], defaultValue: "mail@example.com"),
+            address: cardElement(data["address"], defaultValue: "住所"),
+            phone: cardElement(data["phone"], defaultValue: "電話番号"),
+            organization: cardElement(data["organization"], defaultValue: "組織"),
+            title: cardElement(data["title"], defaultValue: "肩書き"),
             createdAt: int64Value(data["createdAt"]),
             updatedAt: int64Value(data["updatedAt"]),
             partnerIds: data["partnerIds"] as? [String] ?? []
@@ -181,12 +184,13 @@ final class FireStoreUserRepository: UserRepository {
         [
             "id": card.id,
             "ownerUid": card.ownerUid,
-            "name": card.name,
-            "email": card.email,
-            "address": card.address,
-            "phone": card.phone,
-            "organization": card.organization,
-            "title": card.title,
+            "caption": card.caption,
+            "name": cardElementDictionary(element: card.name),
+            "email": cardElementDictionary(element: card.email),
+            "address": cardElementDictionary(element: card.address),
+            "phone": cardElementDictionary(element: card.phone),
+            "organization": cardElementDictionary(element: card.organization),
+            "title": cardElementDictionary(element: card.title),
             "createdAt": card.createdAt,
             "updatedAt": card.updatedAt,
             "partnerIds": card.partnerIds,
@@ -197,12 +201,13 @@ final class FireStoreUserRepository: UserRepository {
         CardEntity(
             id: id,
             ownerUid: ownerUid,
-            name: "",
-            email: "",
-            address: "",
-            phone: "",
-            organization: "",
-            title: "",
+            caption: "",
+            name: cardElement("氏名", defaultValue: "氏名"),
+            email: cardElement("mail@example.com", defaultValue: "mail@example.com"),
+            address: cardElement("住所", defaultValue: "住所"),
+            phone: cardElement("電話番号", defaultValue: "電話番号"),
+            organization: cardElement("組織", defaultValue: "組織"),
+            title: cardElement("肩書き", defaultValue: "肩書き"),
             createdAt: 0,
             updatedAt: 0,
             partnerIds: []
@@ -253,6 +258,68 @@ private func int64Value(_ value: Any?) -> Int64 {
         return Int64(value)
     case let value as NSNumber:
         return value.int64Value
+    default:
+        return 0
+    }
+}
+
+private func cardElementDictionary(element: CardEntity.CardElement) -> [String: Any] {
+    [
+        "value": element.value,
+        "x": element.x,
+        "y": element.y,
+        "rotation": element.rotation,
+        "sanserif": element.sanserif,
+        "fontSize": element.fontSize,
+    ]
+}
+
+private func cardElement(_ value: Any?, defaultValue: String) -> CardEntity.CardElement {
+    if let value = value as? String {
+        return CardEntity.CardElement(
+            value: value.isEmpty ? defaultValue : value,
+            x: 1,
+            y: 1,
+            rotation: 0,
+            sanserif: false,
+            fontSize: 0.16
+        )
+    }
+
+    let data = value as? [String: Any] ?? [:]
+    return CardEntity.CardElement(
+        value: data["value"] as? String ?? defaultValue,
+        x: floatValue(data["x"], defaultValue: 1),
+        y: floatValue(data["y"], defaultValue: 1),
+        rotation: int32Value(data["rotation"]),
+        sanserif: data["sanserif"] as? Bool ?? false,
+        fontSize: floatValue(data["fontSize"], defaultValue: 0.16)
+    )
+}
+
+private func floatValue(_ value: Any?, defaultValue: Float) -> Float {
+    switch value {
+    case let value as Float:
+        return value
+    case let value as Double:
+        return Float(value)
+    case let value as Int:
+        return Float(value)
+    case let value as NSNumber:
+        return value.floatValue
+    default:
+        return defaultValue
+    }
+}
+
+private func int32Value(_ value: Any?) -> Int32 {
+    switch value {
+    case let value as Int32:
+        return value
+    case let value as Int:
+        return Int32(value)
+    case let value as NSNumber:
+        return value.int32Value
     default:
         return 0
     }

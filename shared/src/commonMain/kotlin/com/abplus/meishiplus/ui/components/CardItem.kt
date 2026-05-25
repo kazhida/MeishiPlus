@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,7 +32,9 @@ fun CardItem(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(91f / 55f),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
@@ -42,19 +45,18 @@ fun CardItem(
                 .fillMaxWidth()
                 .padding(20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
             InitialMark(
-                name = cardEntity.name,
+                name = cardEntity.name.value,
                 modifier = Modifier.size(56.dp),
             )
 
             Column(
                 modifier = Modifier.weight(1f),
             ) {
-                if (cardEntity.organization.isNotBlank()) {
+                if (cardEntity.organization.value.isNotBlank()) {
                     Text(
-                        text = cardEntity.organization,
+                        text = cardEntity.organization.value,
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
@@ -64,16 +66,16 @@ fun CardItem(
                 }
 
                 Text(
-                    text = cardEntity.name,
+                    text = cardEntity.name.value,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                if (cardEntity.title.isNotBlank()) {
+                if (cardEntity.title.value.isNotBlank()) {
                     Text(
-                        text = cardEntity.title,
+                        text = cardEntity.title.value,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -83,9 +85,9 @@ fun CardItem(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                ContactLine(label = "TEL", value = cardEntity.phone)
-                ContactLine(label = "MAIL", value = cardEntity.email)
-                ContactLine(label = "ADDR", value = cardEntity.address)
+                ContactLine(label = "TEL", value = cardEntity.phone.value)
+                ContactLine(label = "MAIL", value = cardEntity.email.value)
+                ContactLine(label = "ADDR", value = cardEntity.address.value)
             }
         }
     }

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,11 +17,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,32 +35,25 @@ import androidx.credentials.exceptions.GetCredentialProviderConfigurationExcepti
 import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.exceptions.NoCredentialException
 import com.abplus.meishiplus.App
-import com.abplus.meishiplus.data.repositories.firestore.FireStoreCardRepository
-import com.abplus.meishiplus.data.repositories.firestore.FireStoreUserRepository
+import com.abplus.meishiplus.viewmodel.UserViewModel
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 @Composable
-fun AndroidAuthGate() {
+fun AndroidAuthGate(userViewModel: UserViewModel) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val credentialManager = remember { CredentialManager.create(context) }
-    val userRepository = remember { FireStoreUserRepository() }
-    val cardRepository = remember { FireStoreCardRepository() }
-    val coroutineScope = rememberCoroutineScope()
-    var currentUser by remember { mutableStateOf(auth.currentUser?.toAuthUser()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val uiState by userViewModel.uiState.collectAsState()
 
-    DisposableEffect(auth) {
+    DisposableEffect(auth, userViewModel) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            currentUser = firebaseAuth.currentUser?.toAuthUser()
+            userViewModel.setAuthUser(firebaseAuth.currentUser?.toAuthUser())
         }
         auth.addAuthStateListener(listener)
         onDispose {
@@ -69,44 +61,56 @@ fun AndroidAuthGate() {
         }
     }
 
-    currentUser?.let { user ->
+    if (!uiState.isAuthResolved) {
+        AuthLoadingScreen()
+        return
+    }
+
+    uiState.authUser?.let { user ->
         App(
             authUser = user,
             onSignOut = {
-                coroutineScope.launch {
+                userViewModel.signOut(signOut = {
                     auth.signOut()
                     credentialManager.clearCredentialState(ClearCredentialStateRequest())
-                    currentUser = null
-                }
+                })
             },
-            userRepository = userRepository,
-            cardRepository = cardRepository,
+            appUser = uiState.appUser,
+            errorMessage = uiState.errorMessage,
         )
         return
     }
 
     SignInScreen(
-        isLoading = isLoading,
-        errorMessage = errorMessage,
+        isLoading = uiState.isLoading,
+        errorMessage = uiState.errorMessage,
         onSignIn = {
-            coroutineScope.launch {
-                isLoading = true
-                errorMessage = null
-                runCatching {
+            userViewModel.signIn(
+                signInWithGoogle = {
                     signInWithGoogle(
                         context = context,
                         auth = auth,
                         credentialManager = credentialManager,
-                    )
-                }.onSuccess { firebaseUser ->
-                    currentUser = firebaseUser.toAuthUser()
-                }.onFailure { throwable ->
-                    errorMessage = throwable.userMessage()
-                }
-                isLoading = false
-            }
+                    ).toAuthUser()
+                },
+                toErrorMessage = Throwable::userMessage,
+            )
         },
     )
+}
+
+@Composable
+private fun AuthLoadingScreen() {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
+        }
+    }
 }
 
 @Composable

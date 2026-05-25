@@ -9,7 +9,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.abplus.meishiplus.auth.AndroidAuthGate
 import com.abplus.meishiplus.viewmodel.UserViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import jakarta.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

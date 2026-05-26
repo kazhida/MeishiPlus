@@ -24,6 +24,7 @@ import org.jetbrains.compose.resources.painterResource
 fun CardLayoutScreen(
     cardEntity: CardEntity,
     modifier: Modifier = Modifier,
+    onCardChange: (CardEntity) -> Unit = {},
     onBackClick: () -> Unit = {},
 ) {
     Scaffold(
@@ -48,6 +49,7 @@ fun CardLayoutScreen(
     ) { innerPadding ->
         CardLayout(
             cardEntity = cardEntity,
+            onCardChange = onCardChange,
             modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding)

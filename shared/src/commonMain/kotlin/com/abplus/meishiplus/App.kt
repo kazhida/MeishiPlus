@@ -106,8 +106,17 @@ fun App(
                     id = cardIndex.toString(),
                     name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
                 )
+                val latestCard by rememberUpdatedState(card)
+                DisposableEffect(cardIndex, effectiveUserViewModel) {
+                    onDispose {
+                        effectiveUserViewModel?.updateCardAndReloadUser(latestCard)
+                    }
+                }
                 CardLayoutScreen(
                     cardEntity = card,
+                    onCardChange = { updatedCard ->
+                        effectiveUserViewModel?.updateCard(cardIndex, updatedCard)
+                    },
                     onBackClick = {
                         navController.popBackStack()
                     },

@@ -19,6 +19,7 @@ import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
 import com.abplus.meishiplus.ui.screens.CardEntryScreen
+import com.abplus.meishiplus.ui.screens.CardLayoutScreen
 import com.abplus.meishiplus.ui.screens.TabPagerScreen
 import com.abplus.meishiplus.viewmodel.UserUiState
 import com.abplus.meishiplus.viewmodel.UserViewModel
@@ -72,13 +73,16 @@ fun App(
                     onEditCard = { cardIndex ->
                         navController.navigate(CardEntryRoute(cardIndex))
                     },
+                    onLayoutCard = { cardIndex ->
+                        navController.navigate(CardLayoutRoute(cardIndex))
+                    },
                 )
             }
             composable<CardEntryRoute> { backStackEntry ->
                 val cardIndex = backStackEntry.toRoute<CardEntryRoute>().cardIndex
-                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity(
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
                     id = cardIndex.toString(),
-                    name = CardEntity.CardElement("名刺${cardIndex + 1}"),
+                    name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
                 )
                 val latestCard by rememberUpdatedState(card)
                 DisposableEffect(cardIndex, effectiveUserViewModel) {
@@ -91,6 +95,22 @@ fun App(
                     onCardChange = { updatedCard ->
                         effectiveUserViewModel?.updateCard(cardIndex, updatedCard)
                     },
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                )
+            }
+            composable<CardLayoutRoute> { backStackEntry ->
+                val cardIndex = backStackEntry.toRoute<CardLayoutRoute>().cardIndex
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
+                    id = cardIndex.toString(),
+                    name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
+                )
+                CardLayoutScreen(
+                    cardEntity = card,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
                 )
             }
         }
@@ -102,3 +122,6 @@ private data object HomeRoute
 
 @Serializable
 private data class CardEntryRoute(val cardIndex: Int)
+
+@Serializable
+private data class CardLayoutRoute(val cardIndex: Int)

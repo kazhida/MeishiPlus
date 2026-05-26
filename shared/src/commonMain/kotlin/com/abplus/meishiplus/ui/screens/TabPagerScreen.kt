@@ -56,6 +56,7 @@ fun TabPagerScreen(
     errorMessage: String? = null,
     onSignOut: (() -> Unit)? = null,
     onEditCard: (Int) -> Unit = {},
+    onLayoutCard: (Int) -> Unit = {},
 ) {
     val cards = appUser?.cards.orEmpty()
     val tabs = if (cards.isNotEmpty()) {
@@ -192,6 +193,7 @@ fun TabPagerScreen(
                                 cardIndex = page,
                                 cardEntity = cards.getOrNull(page),
                                 onEditCard = onEditCard,
+                                onLayoutCard = onLayoutCard,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -213,11 +215,12 @@ private fun TabPage(
     cardIndex: Int,
     cardEntity: CardEntity?,
     onEditCard: (Int) -> Unit,
+    onLayoutCard: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val card = cardEntity ?: CardEntity(
+    val card = cardEntity ?: CardEntity.default().copy(
         id = title.hashCode().toString(),
-        name = CardEntity.CardElement(title),
+        name = CardEntity.default().name.copy(value = title),
     )
     Column(
         modifier = modifier
@@ -228,6 +231,7 @@ private fun TabPage(
         CardItem(
             cardEntity = card,
             onEditClick = { onEditCard(cardIndex) },
+            onLayoutClick = { onLayoutCard(cardIndex) },
         )
     }
 }

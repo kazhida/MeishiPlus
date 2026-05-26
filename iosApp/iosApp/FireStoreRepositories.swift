@@ -58,7 +58,8 @@ final class FireStoreCardRepository: CardRepository {
             "caption": card.caption,
             "name": cardElementDictionary(element: card.name),
             "email": cardElementDictionary(element: card.email),
-            "address": cardElementDictionary(element: card.address),
+            "address1": cardElementDictionary(element: card.address1),
+            "address2": cardElementDictionary(element: card.address2),
             "phone": cardElementDictionary(element: card.phone),
             "organization": cardElementDictionary(element: card.organization),
             "title": cardElementDictionary(element: card.title),
@@ -75,7 +76,8 @@ final class FireStoreCardRepository: CardRepository {
             caption: card.caption,
             name: card.name,
             email: card.email,
-            address: card.address,
+            address1: card.address1,
+            address2: card.address2,
             phone: card.phone,
             organization: card.organization,
             title: card.title,
@@ -90,12 +92,13 @@ final class FireStoreCardRepository: CardRepository {
             id: data["id"] as? String ?? id,
             ownerUid: data["ownerUid"] as? String ?? "",
             caption: data["caption"] as? String ?? "",
-            name: cardElement(data["name"], defaultValue: "氏名"),
-            email: cardElement(data["email"], defaultValue: "mail@example.com"),
-            address: cardElement(data["address"], defaultValue: "住所"),
-            phone: cardElement(data["phone"], defaultValue: "電話番号"),
-            organization: cardElement(data["organization"], defaultValue: "組織"),
-            title: cardElement(data["title"], defaultValue: "肩書き"),
+            name: cardElement(data["name"], defaultValue: "氏名", x: 0.07, y: 0.33, fontSize: 24),
+            email: cardElement(data["email"], defaultValue: "mail@example.com", x: 0.20, y: 0.66, fontSize: 12),
+            address1: cardElement(data["address1"], defaultValue: "住所", x: 0.20, y: 0.77, fontSize: 12),
+            address2: cardElement(data["address2"] ?? data["address"], defaultValue: "", x: 0.20, y: 0.77, fontSize: 12),
+            phone: cardElement(data["phone"], defaultValue: "電話番号", x: 0.20, y: 0.55, fontSize: 12),
+            organization: cardElement(data["organization"], defaultValue: "組織", x: 0.07, y: 0.12, fontSize: 14),
+            title: cardElement(data["title"], defaultValue: "肩書き", x: 0.07, y: 0.23, fontSize: 14),
             createdAt: int64Value(data["createdAt"]),
             updatedAt: int64Value(data["updatedAt"]),
             partnerIds: data["partnerIds"] as? [String] ?? []
@@ -187,7 +190,8 @@ final class FireStoreUserRepository: UserRepository {
             "caption": card.caption,
             "name": cardElementDictionary(element: card.name),
             "email": cardElementDictionary(element: card.email),
-            "address": cardElementDictionary(element: card.address),
+            "address1": cardElementDictionary(element: card.address1),
+            "address2": cardElementDictionary(element: card.address2),
             "phone": cardElementDictionary(element: card.phone),
             "organization": cardElementDictionary(element: card.organization),
             "title": cardElementDictionary(element: card.title),
@@ -202,12 +206,13 @@ final class FireStoreUserRepository: UserRepository {
             id: id,
             ownerUid: ownerUid,
             caption: "",
-            name: cardElement("氏名", defaultValue: "氏名"),
-            email: cardElement("mail@example.com", defaultValue: "mail@example.com"),
-            address: cardElement("住所", defaultValue: "住所"),
-            phone: cardElement("電話番号", defaultValue: "電話番号"),
-            organization: cardElement("組織", defaultValue: "組織"),
-            title: cardElement("肩書き", defaultValue: "肩書き"),
+            name: cardElement("氏名", defaultValue: "氏名", x: 0.07, y: 0.33, fontSize: 24),
+            email: cardElement("mail@example.com", defaultValue: "mail@example.com", x: 0.20, y: 0.66, fontSize: 12),
+            address1: cardElement("住所", defaultValue: "住所", x: 0.20, y: 0.77, fontSize: 12),
+            address2: cardElement("", defaultValue: "", x: 0.20, y: 0.77, fontSize: 12),
+            phone: cardElement("電話番号", defaultValue: "電話番号", x: 0.20, y: 0.55, fontSize: 12),
+            organization: cardElement("組織", defaultValue: "組織", x: 0.07, y: 0.12, fontSize: 14),
+            title: cardElement("肩書き", defaultValue: "肩書き", x: 0.07, y: 0.23, fontSize: 14),
             createdAt: 0,
             updatedAt: 0,
             partnerIds: []
@@ -274,26 +279,34 @@ private func cardElementDictionary(element: CardEntity.CardElement) -> [String: 
     ]
 }
 
-private func cardElement(_ value: Any?, defaultValue: String) -> CardEntity.CardElement {
+private func cardElement(
+    _ value: Any?,
+    defaultValue: String,
+    x: Float,
+    y: Float,
+    fontSize: Float
+) -> CardEntity.CardElement {
     if let value = value as? String {
         return CardEntity.CardElement(
             value: value.isEmpty ? defaultValue : value,
-            x: 1,
-            y: 1,
+            x: x,
+            y: y,
             rotation: 0,
             sanserif: false,
-            fontSize: 0.16
+            fontSize: fontSize
         )
     }
 
     let data = value as? [String: Any] ?? [:]
+    let resolvedFontSize = floatValue(data["fontSize"], defaultValue: fontSize)
+    let shouldInitializeLayout = resolvedFontSize < 1
     return CardEntity.CardElement(
         value: data["value"] as? String ?? defaultValue,
-        x: floatValue(data["x"], defaultValue: 1),
-        y: floatValue(data["y"], defaultValue: 1),
+        x: shouldInitializeLayout ? x : floatValue(data["x"], defaultValue: x),
+        y: shouldInitializeLayout ? y : floatValue(data["y"], defaultValue: y),
         rotation: int32Value(data["rotation"]),
         sanserif: data["sanserif"] as? Bool ?? false,
-        fontSize: floatValue(data["fontSize"], defaultValue: 0.16)
+        fontSize: shouldInitializeLayout ? fontSize : resolvedFontSize
     )
 }
 

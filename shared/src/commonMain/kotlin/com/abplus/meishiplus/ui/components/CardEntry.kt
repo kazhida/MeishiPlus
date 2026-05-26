@@ -87,11 +87,16 @@ fun CardEntry(
                 keyboardType = KeyboardType.Phone,
             )
             EntryTextField(
-                value = cardEntity.address.value,
-                onValueChange = { onCardChange(cardEntity.copy(address = cardEntity.address.copy(value = it))) },
-                label = "住所",
+                value = cardEntity.address1.value,
+                onValueChange = { onCardChange(cardEntity.copy(address1 = cardEntity.address1.copy(value = it))) },
+                label = "住所1",
                 imeAction = ImeAction.Done,
-                minLines = 2,
+            )
+            EntryTextField(
+                value = cardEntity.address2.value,
+                onValueChange = { onCardChange(cardEntity.copy(address2 = cardEntity.address2.copy(value = it))) },
+                label = "住所2",
+                imeAction = ImeAction.Done,
             )
         }
     }

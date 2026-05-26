@@ -48,7 +48,7 @@ class FireStoreUserRepository(
                 CardEntity.default().copy(
                     id = document.id,
                     ownerUid = userId,
-                ),
+                ).withInitializedLayout(),
             )
         }
         batch.commit().await()

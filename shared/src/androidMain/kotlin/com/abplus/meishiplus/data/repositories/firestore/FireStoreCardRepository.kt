@@ -12,7 +12,7 @@ class FireStoreCardRepository(
 
     override suspend fun addCard(card: CardEntity): CardEntity {
         val document = cards.document()
-        val cardWithId = card.copy(id = document.id)
+        val cardWithId = card.withInitializedLayout().copy(id = document.id)
         document
             .set(cardWithId)
             .await()
@@ -24,6 +24,7 @@ class FireStoreCardRepository(
             .get()
             .await()
             .toObject(CardEntity::class.java)
+            ?.withInitializedLayout()
             ?: error("Card not found: $id")
 
     override suspend fun getCards(cardIds: List<String>): List<CardEntity> {
@@ -36,7 +37,7 @@ class FireStoreCardRepository(
 
     override suspend fun saveCard(card: CardEntity) {
         cards.document(card.id)
-            .set(card)
+            .set(card.withInitializedLayout())
             .await()
     }
 

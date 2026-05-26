@@ -11,6 +11,8 @@ data class CardEntity(
     val phone: CardElement = CardElement("+1 234-5678", x = 0.20f, y = 0.55f, fontSize = 12f),
     val organization: CardElement = CardElement("秘密結社", x = 0.07f, y = 0.12f, fontSize = 14f),
     val title: CardElement = CardElement("2等陸佐", x = 0.07f, y = 0.23f, fontSize = 14f),
+    val bgAlpha: Float = 0f,
+    val bgFile: String = "",
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
     val partnerIds: List<String> = emptyList()

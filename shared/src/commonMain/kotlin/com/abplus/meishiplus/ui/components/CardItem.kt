@@ -25,15 +25,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.abplus.meishiplus.data.entities.CardEntity
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.ic_edit
@@ -61,6 +64,16 @@ fun CardItem(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+            if (cardEntity.bgFile.isNotBlank()) {
+                AsyncImage(
+                    model = cardEntity.bgFile,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            Box(Modifier.fillMaxSize().alpha(cardEntity.bgAlpha).background(Color.White))
+
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 CardText(
                     element = cardEntity.organization,

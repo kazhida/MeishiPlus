@@ -82,15 +82,14 @@ fun CardEntry(
                                 phone = cardEntity.phone.copy(value = it)
                             )
                         )
-                    },
-                label = "電話番号",
-                keyboardType = KeyboardType.Phone,
-            )
+	                },
+	                label = "電話番号",
+	            )
             EntryTextField(
                 value = cardEntity.address1.value,
                 onValueChange = { onCardChange(cardEntity.copy(address1 = cardEntity.address1.copy(value = it))) },
                 label = "住所1",
-                imeAction = ImeAction.Done,
+                imeAction = ImeAction.Next,
             )
             EntryTextField(
                 value = cardEntity.address2.value,

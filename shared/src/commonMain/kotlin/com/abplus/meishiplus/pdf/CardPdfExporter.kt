@@ -7,3 +7,13 @@ data class CardPdfExportResult(
 )
 
 expect suspend fun createCardPdf(cardEntity: CardEntity): CardPdfExportResult
+
+expect suspend fun createPostcardCardPdf(cardEntity: CardEntity): CardPdfExportResult
+
+expect suspend fun createA4CardPdf(
+    cardEntity: CardEntity,
+    topMarginMm: Float,
+    bottomMarginMm: Float,
+    leftMarginMm: Float,
+    rightMarginMm: Float,
+): CardPdfExportResult

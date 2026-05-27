@@ -32,7 +32,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.abplus.meishiplus.data.entities.CardEntity
-import com.abplus.meishiplus.pdf.createCardPdf
+import com.abplus.meishiplus.pdf.createA4CardPdf
+import com.abplus.meishiplus.pdf.createPostcardCardPdf
 import kotlinx.coroutines.launch
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.ic_home
@@ -48,10 +49,10 @@ fun CardPrintScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     var selectedPageSize by remember { mutableStateOf(CardPrintPageSize.Postcard) }
-    var topMargin by remember { mutableStateOf("10") }
-    var bottomMargin by remember { mutableStateOf("10") }
-    var leftMargin by remember { mutableStateOf("10") }
-    var rightMargin by remember { mutableStateOf("10") }
+    var topMargin by remember { mutableStateOf("11") }
+    var bottomMargin by remember { mutableStateOf("11") }
+    var leftMargin by remember { mutableStateOf("14") }
+    var rightMargin by remember { mutableStateOf("14") }
     var pdfMessage by remember(cardEntity.id) { mutableStateOf<String?>(null) }
 
     Scaffold(
@@ -148,7 +149,16 @@ fun CardPrintScreen(
                     onPdfExportClick(settings)
                     coroutineScope.launch {
                         pdfMessage = runCatching {
-                            createCardPdf(cardEntity).filePath
+                            when (settings.pageSize) {
+                                CardPrintPageSize.Postcard -> createPostcardCardPdf(cardEntity).filePath
+                                CardPrintPageSize.A4 -> createA4CardPdf(
+                                    cardEntity = cardEntity,
+                                    topMarginMm = settings.topMarginMm,
+                                    bottomMarginMm = settings.bottomMarginMm,
+                                    leftMarginMm = settings.leftMarginMm,
+                                    rightMarginMm = settings.rightMarginMm,
+                                ).filePath
+                            }
                         }.fold(
                             onSuccess = { filePath -> "PDFを作成しました: $filePath" },
                             onFailure = { throwable -> "PDF作成に失敗しました: ${throwable.message}" },

@@ -20,6 +20,7 @@ import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
 import com.abplus.meishiplus.ui.screens.CardEntryScreen
 import com.abplus.meishiplus.ui.screens.CardLayoutScreen
+import com.abplus.meishiplus.ui.screens.CardPrintScreen
 import com.abplus.meishiplus.ui.screens.TabPagerScreen
 import com.abplus.meishiplus.viewmodel.UserUiState
 import com.abplus.meishiplus.viewmodel.UserViewModel
@@ -76,6 +77,9 @@ fun App(
                     onLayoutCard = { cardIndex ->
                         navController.navigate(CardLayoutRoute(cardIndex))
                     },
+                    onPrintCard = { cardIndex ->
+                        navController.navigate(CardPrintRoute(cardIndex))
+                    },
                 )
             }
             composable<CardEntryRoute> { backStackEntry ->
@@ -122,6 +126,25 @@ fun App(
                     },
                 )
             }
+            composable<CardPrintRoute> { backStackEntry ->
+                val cardIndex = backStackEntry.toRoute<CardPrintRoute>().cardIndex
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
+                    id = cardIndex.toString(),
+                    name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
+                )
+                val latestCard by rememberUpdatedState(card)
+                DisposableEffect(cardIndex, effectiveUserViewModel) {
+                    onDispose {
+                        effectiveUserViewModel?.updateCardAndReloadUser(latestCard)
+                    }
+                }
+                CardPrintScreen(
+                    cardEntity = card,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                )
+            }
         }
     }
 }
@@ -134,3 +157,6 @@ private data class CardEntryRoute(val cardIndex: Int)
 
 @Serializable
 private data class CardLayoutRoute(val cardIndex: Int)
+
+@Serializable
+private data class CardPrintRoute(val cardIndex: Int)

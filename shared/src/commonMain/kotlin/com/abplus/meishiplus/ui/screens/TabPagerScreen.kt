@@ -10,6 +10,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -26,7 +27,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
@@ -35,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.model.AppUser
+import com.abplus.meishiplus.pdf.createCardPdf
 import com.abplus.meishiplus.ui.components.CardItem
 import com.abplus.meishiplus.ui.components.ProfileHeader
 import kotlinx.coroutines.launch
@@ -222,6 +228,9 @@ private fun TabPage(
         id = title.hashCode().toString(),
         name = CardEntity.default().name.copy(value = title),
     )
+    val coroutineScope = rememberCoroutineScope()
+    var pdfMessage by remember(card.id) { mutableStateOf<String?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -233,5 +242,29 @@ private fun TabPage(
             onEditClick = { onEditCard(cardIndex) },
             onLayoutClick = { onLayoutCard(cardIndex) },
         )
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    pdfMessage = runCatching {
+                        createCardPdf(card).filePath
+                    }.fold(
+                        onSuccess = { filePath -> "PDFを作成しました: $filePath" },
+                        onFailure = { throwable -> "PDF作成に失敗しました: ${throwable.message}" },
+                    )
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+        ) {
+            Text("PDF作成")
+        }
+        pdfMessage?.let { message ->
+            Text(
+                text = message,
+                modifier = Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
     }
 }

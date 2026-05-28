@@ -1,6 +1,7 @@
 package com.abplus.meishiplus.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -41,6 +42,7 @@ import com.abplus.meishiplus.data.entities.CardEntity
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.ic_edit
 import meishiplus.shared.generated.resources.ic_layout
+import meishiplus.shared.generated.resources.ic_print
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -49,6 +51,8 @@ fun CardItem(
     modifier: Modifier = Modifier,
     onEditClick: () -> Unit = {},
     onLayoutClick: () -> Unit = {},
+    onPrintClick: () -> Unit = {},
+    onCardClick: () -> Unit = {},
     isLayoutLocked: Boolean = true,
     onCardChange: (CardEntity) -> Unit = {},
     onLayoutChangeFinished: () -> Unit = {},
@@ -56,7 +60,12 @@ fun CardItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(91f / 55f),
+            .aspectRatio(91f / 55f)
+            .widthIn(max = 460.dp)
+            .clickable(
+                enabled = isLayoutLocked,
+                onClick = onCardClick,
+            ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
@@ -178,6 +187,21 @@ fun CardItem(
                     Icon(
                         painter = painterResource(Res.drawable.ic_layout),
                         contentDescription = "レイアウト",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                IconButton(
+                    onClick = onPrintClick,
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.25f)),
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_print),
+                        contentDescription = "印刷",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp),
                     )

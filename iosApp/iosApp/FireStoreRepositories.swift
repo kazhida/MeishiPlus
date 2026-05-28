@@ -63,6 +63,8 @@ final class FireStoreCardRepository: CardRepository {
             "phone": cardElementDictionary(element: card.phone),
             "organization": cardElementDictionary(element: card.organization),
             "title": cardElementDictionary(element: card.title),
+            "bgAlpha": card.bgAlpha,
+            "bgFile": card.bgFile,
             "createdAt": card.createdAt,
             "updatedAt": card.updatedAt,
             "partnerIds": card.partnerIds,
@@ -81,6 +83,8 @@ final class FireStoreCardRepository: CardRepository {
             phone: card.phone,
             organization: card.organization,
             title: card.title,
+            bgAlpha: card.bgAlpha,
+            bgFile: card.bgFile,
             createdAt: card.createdAt,
             updatedAt: card.updatedAt,
             partnerIds: card.partnerIds
@@ -99,6 +103,8 @@ final class FireStoreCardRepository: CardRepository {
             phone: cardElement(data["phone"], defaultValue: "電話番号", x: 0.20, y: 0.55, fontSize: 12),
             organization: cardElement(data["organization"], defaultValue: "組織", x: 0.07, y: 0.12, fontSize: 14),
             title: cardElement(data["title"], defaultValue: "肩書き", x: 0.07, y: 0.23, fontSize: 14),
+            bgAlpha: 0.0,
+            bgFile: "",
             createdAt: int64Value(data["createdAt"]),
             updatedAt: int64Value(data["updatedAt"]),
             partnerIds: data["partnerIds"] as? [String] ?? []
@@ -213,6 +219,8 @@ final class FireStoreUserRepository: UserRepository {
             phone: cardElement("電話番号", defaultValue: "電話番号", x: 0.20, y: 0.55, fontSize: 12),
             organization: cardElement("組織", defaultValue: "組織", x: 0.07, y: 0.12, fontSize: 14),
             title: cardElement("肩書き", defaultValue: "肩書き", x: 0.07, y: 0.23, fontSize: 14),
+            bgAlpha: 0.0,
+            bgFile: "",
             createdAt: 0,
             updatedAt: 0,
             partnerIds: []

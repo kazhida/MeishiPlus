@@ -1,14 +1,22 @@
 package com.abplus.meishiplus.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,8 +34,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -41,10 +54,14 @@ import kotlinx.coroutines.launch
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.bg
 import meishiplus.shared.generated.resources.ic_badge
+import meishiplus.shared.generated.resources.ic_edit
 import meishiplus.shared.generated.resources.ic_home
+import meishiplus.shared.generated.resources.ic_layout
 import meishiplus.shared.generated.resources.ic_logout
 import meishiplus.shared.generated.resources.ic_menu
+import meishiplus.shared.generated.resources.ic_print
 import meishiplus.shared.generated.resources.ic_settings
+import meishiplus.shared.generated.resources.ic_swap
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -58,6 +75,7 @@ fun TabPagerScreen(
     onEditCard: (Int) -> Unit = {},
     onLayoutCard: (Int) -> Unit = {},
     onPrintCard: (Int) -> Unit = {},
+    onExchangeCard: (Int) -> Unit = {},
     onPreviewCard: (Int) -> Unit = {},
 ) {
     val cards = appUser?.cards.orEmpty()
@@ -190,16 +208,32 @@ fun TabPagerScreen(
                                 )
                             }
                         } else {
-                            TabPage(
-                                title = tabs[page],
-                                cardIndex = page,
-                                cardEntity = cards.getOrNull(page),
-                                onEditCard = onEditCard,
-                                onLayoutCard = onLayoutCard,
-                                onPrintCard = onPrintCard,
-                                onPreviewCard = onPreviewCard,
-                                modifier = Modifier.fillMaxSize(),
-                            )
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                TabPage(
+                                    title = tabs[page],
+                                    cardIndex = page,
+                                    cardEntity = cards.getOrNull(page),
+                                    onPreviewCard = onPreviewCard,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(16.dp),
+                                ) {
+                                    CardItemActionMenu(
+                                        onMenuClick = {},
+                                onEditClick = { onEditCard(page) },
+                                onLayoutClick = { onLayoutCard(page) },
+                                onPrintClick = { onPrintCard(page) },
+                                onSwapClick = { onExchangeCard(page) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                            .widthIn(max = 460.dp)
+                                            .wrapContentSize(Alignment.TopEnd),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -218,9 +252,6 @@ private fun TabPage(
     title: String,
     cardIndex: Int,
     cardEntity: CardEntity?,
-    onEditCard: (Int) -> Unit,
-    onLayoutCard: (Int) -> Unit,
-    onPrintCard: (Int) -> Unit,
     onPreviewCard: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -235,12 +266,91 @@ private fun TabPage(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
-        CardItem(
-            cardEntity = card,
-            onEditClick = { onEditCard(cardIndex) },
-            onLayoutClick = { onLayoutCard(cardIndex) },
-            onPrintClick = { onPrintCard(cardIndex) },
-            onCardClick = { onPreviewCard(cardIndex) },
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 460.dp)
+                .aspectRatio(91f / 55f),
+        ) {
+            CardItem(
+                cardEntity = card,
+                modifier = Modifier.fillMaxSize(),
+                onCardClick = { onPreviewCard(cardIndex) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CardItemActionMenu(
+    onMenuClick: () -> Unit,
+    onEditClick: () -> Unit,
+    onLayoutClick: () -> Unit,
+    onPrintClick: () -> Unit,
+    onSwapClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var isActionMenuVisible by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier.padding(
+            top = 8.dp,
+            end = 8.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        CardItemActionButton(
+            icon = Res.drawable.ic_menu,
+            contentDescription = "メニュー",
+            onClick = {
+                isActionMenuVisible = !isActionMenuVisible
+                onMenuClick()
+            },
+        )
+        if (isActionMenuVisible) {
+            CardItemActionButton(
+                icon = Res.drawable.ic_edit,
+                contentDescription = "編集",
+                onClick = onEditClick,
+            )
+            CardItemActionButton(
+                icon = Res.drawable.ic_layout,
+                contentDescription = "レイアウト",
+                onClick = onLayoutClick,
+            )
+            CardItemActionButton(
+                icon = Res.drawable.ic_print,
+                contentDescription = "印刷",
+                onClick = onPrintClick,
+            )
+            CardItemActionButton(
+                icon = Res.drawable.ic_swap,
+                contentDescription = "交換",
+                onClick = onSwapClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CardItemActionButton(
+    icon: DrawableResource,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .padding(4.dp)
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.25f)),
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = contentDescription,
+            tint = Color.White,
+            modifier = Modifier.size(20.dp),
         )
     }
 }

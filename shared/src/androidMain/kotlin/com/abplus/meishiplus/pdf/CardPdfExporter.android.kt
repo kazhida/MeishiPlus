@@ -17,6 +17,10 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.min
 import kotlin.math.max
+import androidx.core.net.toUri
+import androidx.core.graphics.withRotation
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object AndroidCardPdfContext {
     lateinit var applicationContext: Context
@@ -52,8 +56,10 @@ actual suspend fun createCardPdf(cardEntity: CardEntity): CardPdfExportResult {
             loadBitmap = { uri -> context.loadBitmapFromUri(uri) },
         )
         document.finishPage(page)
-        FileOutputStream(outputFile).use { output ->
-            document.writeTo(output)
+        withContext(Dispatchers.IO) {
+            FileOutputStream(outputFile).use { output ->
+                document.writeTo(output)
+            }
         }
     } finally {
         document.close()
@@ -93,8 +99,10 @@ actual suspend fun createPostcardCardPdf(cardEntity: CardEntity): CardPdfExportR
         }
 
         document.finishPage(page)
-        FileOutputStream(outputFile).use { output ->
-            document.writeTo(output)
+        withContext(Dispatchers.IO) {
+            FileOutputStream(outputFile).use { output ->
+                document.writeTo(output)
+            }
         }
     } finally {
         document.close()
@@ -156,8 +164,10 @@ actual suspend fun createA4CardPdf(
         }
 
         document.finishPage(page)
-        FileOutputStream(outputFile).use { output ->
-            document.writeTo(output)
+        withContext(Dispatchers.IO) {
+            FileOutputStream(outputFile).use { output ->
+                document.writeTo(output)
+            }
         }
     } finally {
         document.close()
@@ -249,12 +259,11 @@ private fun drawCardText(
         textSize = element.fontSize * CardPdfFontScale * scale
     }
 
-    canvas.save()
-    canvas.rotate(element.rotation.toFloat(), x, y)
-    element.value.lines().forEachIndexed { index, line ->
-        canvas.drawText(line, x, y + paint.textSize + index * paint.textSize * 1.25f, paint)
+    canvas.withRotation(element.rotation.toFloat(), x, y) {
+        element.value.lines().forEachIndexed { index, line ->
+            drawText(line, x, y + paint.textSize + index * paint.textSize * 1.25f, paint)
+        }
     }
-    canvas.restore()
 }
 
 private fun CardEntity.CardElement.labelElement(label: String): CardEntity.CardElement = copy(
@@ -268,7 +277,7 @@ private fun Context.loadBitmapFromUri(uri: String): Bitmap? {
         if (uri.startsWith(assetPrefix)) {
             assets.open(uri.removePrefix(assetPrefix)).use(BitmapFactory::decodeStream)
         } else {
-            contentResolver.openInputStream(android.net.Uri.parse(uri))?.use(BitmapFactory::decodeStream)
+            contentResolver.openInputStream(uri.toUri())?.use(BitmapFactory::decodeStream)
         }
     }.getOrNull()
 }

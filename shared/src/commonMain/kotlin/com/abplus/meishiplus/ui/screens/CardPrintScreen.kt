@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -88,11 +89,13 @@ fun CardPrintScreen(
             CardPrintPageSizeOption(
                 text = "はがきサイズ",
                 selected = selectedPageSize == CardPrintPageSize.Postcard,
+                testTag = "postcard-page-size-radio",
                 onClick = { selectedPageSize = CardPrintPageSize.Postcard },
             )
             CardPrintPageSizeOption(
                 text = "A4サイズ",
                 selected = selectedPageSize == CardPrintPageSize.A4,
+                testTag = "a4-page-size-radio",
                 onClick = { selectedPageSize = CardPrintPageSize.A4 },
             )
 
@@ -184,6 +187,7 @@ fun CardPrintScreen(
 private fun CardPrintPageSizeOption(
     text: String,
     selected: Boolean,
+    testTag: String,
     onClick: () -> Unit,
 ) {
     Row(
@@ -195,6 +199,7 @@ private fun CardPrintPageSizeOption(
         RadioButton(
             selected = selected,
             onClick = onClick,
+            modifier = Modifier.testTag(testTag),
         )
         Text(
             text = text,

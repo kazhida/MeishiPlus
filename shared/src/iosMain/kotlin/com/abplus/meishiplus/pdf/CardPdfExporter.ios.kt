@@ -16,7 +16,6 @@ import platform.CoreGraphics.CGContextSetStrokeColorWithColor
 import platform.CoreGraphics.CGContextStrokeRect
 import platform.CoreGraphics.CGContextTranslateCTM
 import platform.CoreGraphics.CGRectMake
-import platform.Foundation.NSAttributedStringKey
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSData
 import platform.Foundation.NSDate

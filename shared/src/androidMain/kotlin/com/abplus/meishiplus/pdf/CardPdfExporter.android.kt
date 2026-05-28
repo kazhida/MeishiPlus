@@ -10,6 +10,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import android.util.Log
 import androidx.core.content.FileProvider
 import com.abplus.meishiplus.data.entities.CardEntity
 import java.io.File
@@ -19,6 +20,17 @@ import kotlin.math.max
 
 object AndroidCardPdfContext {
     lateinit var applicationContext: Context
+}
+
+actual fun deletePdfFileQuietly(filePath: String) {
+    runCatching {
+        val file = File(filePath)
+        if (file.exists() && !file.delete()) {
+            Log.w("CardPdfExporter", "Failed to delete PDF file: $filePath")
+        }
+    }.onFailure { throwable ->
+        Log.w("CardPdfExporter", "Failed to delete PDF file: $filePath", throwable)
+    }
 }
 
 actual suspend fun createCardPdf(cardEntity: CardEntity): CardPdfExportResult {

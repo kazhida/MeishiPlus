@@ -20,6 +20,8 @@ import platform.Foundation.NSAttributedStringKey
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSData
 import platform.Foundation.NSDate
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSLog
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSString
 import platform.Foundation.NSURL
@@ -43,6 +45,18 @@ import platform.UIKit.popoverPresentationController
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
+
+@OptIn(ExperimentalForeignApi::class)
+actual fun deletePdfFileQuietly(filePath: String) {
+    runCatching {
+        val deleted = NSFileManager.defaultManager.removeItemAtPath(filePath, null)
+        if (!deleted) {
+            NSLog("Failed to delete PDF file: %@", filePath)
+        }
+    }.onFailure { throwable ->
+        NSLog("Failed to delete PDF file: %@ (%@)", filePath, throwable.message ?: "unknown error")
+    }
+}
 
 @OptIn(ExperimentalForeignApi::class)
 actual suspend fun createCardPdf(cardEntity: CardEntity): CardPdfExportResult {

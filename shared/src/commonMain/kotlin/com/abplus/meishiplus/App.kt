@@ -20,7 +20,7 @@ import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
 import com.abplus.meishiplus.ui.screens.CardEntryScreen
 import com.abplus.meishiplus.ui.screens.CardLayoutScreen
-import com.abplus.meishiplus.ui.screens.CardPreViewScreen
+import com.abplus.meishiplus.ui.screens.CardPreviewScreen
 import com.abplus.meishiplus.ui.screens.CardPrintScreen
 import com.abplus.meishiplus.ui.screens.TabPagerScreen
 import com.abplus.meishiplus.viewmodel.UserUiState
@@ -155,7 +155,7 @@ fun App(
                     id = cardIndex.toString(),
                     name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
                 )
-                CardPreViewScreen(
+                CardPreviewScreen(
                     cardEntity = card,
                     onBackClick = {
                         navController.popBackStack()

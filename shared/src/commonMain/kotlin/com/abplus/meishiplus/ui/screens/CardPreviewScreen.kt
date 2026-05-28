@@ -19,7 +19,7 @@ import com.abplus.meishiplus.pdf.createCardPdf
 import com.abplus.meishiplus.ui.components.PdfPreview
 
 @Composable
-fun CardPreViewScreen(
+fun CardPreviewScreen(
     cardEntity: CardEntity,
     onBackClick: () -> Unit = {},
 ) {

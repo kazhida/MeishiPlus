@@ -47,7 +47,6 @@ actual suspend fun createCardPdf(cardEntity: CardEntity): CardPdfExportResult {
         document.close()
     }
 
-    context.openPdfFile(outputFile)
     return CardPdfExportResult(filePath = outputFile.absolutePath)
 }
 
@@ -171,7 +170,7 @@ private fun drawCardPdf(
 
     if (cardEntity.bgFile.isNotBlank()) {
         loadBitmap(cardEntity.bgFile)?.let { bitmap ->
-            canvas.drawBitmap(bitmap, null, rect, Paint(Paint.ANTI_ALIAS_FLAG))
+            canvas.drawBitmap(bitmap, null, bitmap.centerCropRect(rect), Paint(Paint.ANTI_ALIAS_FLAG))
         }
     }
 
@@ -260,6 +259,15 @@ private fun Context.loadBitmapFromUri(uri: String): Bitmap? {
             contentResolver.openInputStream(android.net.Uri.parse(uri))?.use(BitmapFactory::decodeStream)
         }
     }.getOrNull()
+}
+
+private fun Bitmap.centerCropRect(bounds: RectF): RectF {
+    val scale = max(bounds.width() / width, bounds.height() / height)
+    val scaledWidth = width * scale
+    val scaledHeight = height * scale
+    val left = bounds.left + (bounds.width() - scaledWidth) / 2f
+    val top = bounds.top + (bounds.height() - scaledHeight) / 2f
+    return RectF(left, top, left + scaledWidth, top + scaledHeight)
 }
 
 private fun Context.openPdfFile(file: File) {

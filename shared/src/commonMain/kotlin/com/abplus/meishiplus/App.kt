@@ -20,6 +20,7 @@ import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
 import com.abplus.meishiplus.ui.screens.CardEntryScreen
 import com.abplus.meishiplus.ui.screens.CardLayoutScreen
+import com.abplus.meishiplus.ui.screens.CardPreViewScreen
 import com.abplus.meishiplus.ui.screens.CardPrintScreen
 import com.abplus.meishiplus.ui.screens.TabPagerScreen
 import com.abplus.meishiplus.viewmodel.UserUiState
@@ -79,6 +80,9 @@ fun App(
                     },
                     onPrintCard = { cardIndex ->
                         navController.navigate(CardPrintRoute(cardIndex))
+                    },
+                    onPreviewCard = { cardIndex ->
+                        navController.navigate(CardPreviewRoute(cardIndex))
                     },
                 )
             }
@@ -145,6 +149,19 @@ fun App(
                     },
                 )
             }
+            composable<CardPreviewRoute> { backStackEntry ->
+                val cardIndex = backStackEntry.toRoute<CardPreviewRoute>().cardIndex
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
+                    id = cardIndex.toString(),
+                    name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
+                )
+                CardPreViewScreen(
+                    cardEntity = card,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                )
+            }
         }
     }
 }
@@ -160,3 +177,6 @@ private data class CardLayoutRoute(val cardIndex: Int)
 
 @Serializable
 private data class CardPrintRoute(val cardIndex: Int)
+
+@Serializable
+private data class CardPreviewRoute(val cardIndex: Int)

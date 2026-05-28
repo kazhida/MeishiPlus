@@ -3,6 +3,7 @@ package com.abplus.meishiplus.pdf
 import com.abplus.meishiplus.data.entities.CardEntity
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
+import platform.CoreGraphics.CGContextClipToRect
 import platform.CoreGraphics.CGContextDrawImage
 import platform.CoreGraphics.CGContextRestoreGState
 import platform.CoreGraphics.CGContextRotateCTM
@@ -61,7 +62,6 @@ actual suspend fun createCardPdf(cardEntity: CardEntity): CardPdfExportResult {
         )
     }
     data.writeToFile(outputPath, atomically = true)
-    sharePdfFile(outputPath)
     return CardPdfExportResult(filePath = outputPath)
 }
 
@@ -174,10 +174,22 @@ private fun drawCardPdf(
         loadImage(cardEntity.bgFile)?.let { image ->
             image.CGImage?.let { cgImage ->
                 val context = platform.UIKit.UIGraphicsGetCurrentContext() ?: return@let
+                val imageWidth = platform.CoreGraphics.CGImageGetWidth(cgImage).toDouble()
+                val imageHeight = platform.CoreGraphics.CGImageGetHeight(cgImage).toDouble()
+                val scale = max(width / imageWidth, height / imageHeight)
+                val scaledWidth = imageWidth * scale
+                val scaledHeight = imageHeight * scale
+                val drawLeft = left + (width - scaledWidth) / 2.0
+                val drawTop = top + (height - scaledHeight) / 2.0
                 CGContextSaveGState(context)
                 CGContextTranslateCTM(context, 0.0, pageHeight)
                 CGContextScaleCTM(context, 1.0, -1.0)
-                CGContextDrawImage(context, CGRectMake(left, pageHeight - top - height, width, height), cgImage)
+                CGContextClipToRect(context, CGRectMake(left, pageHeight - top - height, width, height))
+                CGContextDrawImage(
+                    context,
+                    CGRectMake(drawLeft, pageHeight - drawTop - scaledHeight, scaledWidth, scaledHeight),
+                    cgImage,
+                )
                 CGContextRestoreGState(context)
             }
         }

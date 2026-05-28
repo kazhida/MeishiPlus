@@ -1,6 +1,7 @@
 package com.abplus.meishiplus.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -51,6 +52,7 @@ fun CardItem(
     onEditClick: () -> Unit = {},
     onLayoutClick: () -> Unit = {},
     onPrintClick: () -> Unit = {},
+    onCardClick: () -> Unit = {},
     isLayoutLocked: Boolean = true,
     onCardChange: (CardEntity) -> Unit = {},
     onLayoutChangeFinished: () -> Unit = {},
@@ -58,7 +60,12 @@ fun CardItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(91f / 55f),
+            .aspectRatio(91f / 55f)
+            .widthIn(max = 460.dp)
+            .clickable(
+                enabled = isLayoutLocked,
+                onClick = onCardClick,
+            ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),

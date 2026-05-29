@@ -1,6 +1,8 @@
 package com.abplus.meishiplus.pdf
 
 import com.abplus.meishiplus.data.entities.CardEntity
+import com.abplus.meishiplus.resources.BusinessCardBackgroundOverlayMaxAlpha
+import com.abplus.meishiplus.resources.resolveBusinessCardBackgroundUri
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreGraphics.CGContextClipToRect
@@ -212,7 +214,7 @@ private fun drawCardPdf(
         val context = platform.UIKit.UIGraphicsGetCurrentContext()
         if (context != null) {
             CGContextSaveGState(context)
-            CGContextSetAlpha(context, cardEntity.bgAlpha.coerceIn(0f, 1f).toDouble())
+            CGContextSetAlpha(context, cardEntity.bgAlpha.coerceIn(0f, BusinessCardBackgroundOverlayMaxAlpha).toDouble())
             CGContextSetFillColorWithColor(context, UIColor.whiteColor.CGColor)
             platform.UIKit.UIRectFill(rect)
             CGContextRestoreGState(context)
@@ -300,10 +302,11 @@ private fun CardEntity.CardElement.labelElement(label: String): CardEntity.CardE
 )
 
 private fun loadImage(uri: String): UIImage? {
-    val data = if (uri.startsWith("file://")) {
-        NSURL.URLWithString(uri)?.let { NSData.dataWithContentsOfURL(it) }
+    val resolvedUri = resolveBusinessCardBackgroundUri(uri)
+    val data = if (resolvedUri.startsWith("file://")) {
+        NSURL.URLWithString(resolvedUri)?.let { NSData.dataWithContentsOfURL(it) }
     } else {
-        NSData.dataWithContentsOfFile(uri)
+        NSData.dataWithContentsOfFile(resolvedUri)
     }
     return data?.let { UIImage.imageWithData(it) }
 }

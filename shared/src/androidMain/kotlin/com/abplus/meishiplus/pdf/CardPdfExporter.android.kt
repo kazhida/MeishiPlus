@@ -13,6 +13,8 @@ import android.graphics.pdf.PdfDocument
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.abplus.meishiplus.data.entities.CardEntity
+import com.abplus.meishiplus.resources.BusinessCardBackgroundOverlayMaxAlpha
+import com.abplus.meishiplus.resources.resolveBusinessCardBackgroundUri
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.min
@@ -199,7 +201,7 @@ private fun drawCardPdf(
     if (cardEntity.bgAlpha > 0f) {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
-            alpha = (cardEntity.bgAlpha.coerceIn(0f, 1f) * 255).toInt()
+            alpha = (cardEntity.bgAlpha.coerceIn(0f, BusinessCardBackgroundOverlayMaxAlpha) * 255).toInt()
             style = Paint.Style.FILL
             canvas.drawRect(rect, this)
         }
@@ -273,11 +275,12 @@ private fun CardEntity.CardElement.labelElement(label: String): CardEntity.CardE
 
 private fun Context.loadBitmapFromUri(uri: String): Bitmap? {
     return runCatching {
+        val resolvedUri = resolveBusinessCardBackgroundUri(uri)
         val assetPrefix = "file:///android_asset/"
-        if (uri.startsWith(assetPrefix)) {
-            assets.open(uri.removePrefix(assetPrefix)).use(BitmapFactory::decodeStream)
+        if (resolvedUri.startsWith(assetPrefix)) {
+            assets.open(resolvedUri.removePrefix(assetPrefix)).use(BitmapFactory::decodeStream)
         } else {
-            contentResolver.openInputStream(uri.toUri())?.use(BitmapFactory::decodeStream)
+            contentResolver.openInputStream(resolvedUri.toUri())?.use(BitmapFactory::decodeStream)
         }
     }.getOrNull()
 }

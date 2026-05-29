@@ -24,18 +24,20 @@ final class FireStoreCardRepository: CardRepository {
             return []
         }
 
-        return try await withThrowingTaskGroup(of: CardEntity.self) { group in
-            for id in cardIds {
+        return try await withThrowingTaskGroup(of: (Int, CardEntity).self) { group in
+            for (index, id) in cardIds.enumerated() {
                 group.addTask {
-                    try await self.getCard(id: id)
+                    (index, try await self.getCard(id: id))
                 }
             }
 
-            var results: [CardEntity] = []
-            for try await card in group {
-                results.append(card)
+            var indexedCards: [(Int, CardEntity)] = []
+            for try await indexedCard in group {
+                indexedCards.append(indexedCard)
             }
-            return results
+            return indexedCards
+                .sorted { $0.0 < $1.0 }
+                .map { $0.1 }
         }
     }
 
@@ -103,8 +105,8 @@ final class FireStoreCardRepository: CardRepository {
             phone: cardElement(data["phone"], defaultValue: "電話番号", x: 0.20, y: 0.55, fontSize: 12),
             organization: cardElement(data["organization"], defaultValue: "組織", x: 0.07, y: 0.12, fontSize: 14),
             title: cardElement(data["title"], defaultValue: "肩書き", x: 0.07, y: 0.23, fontSize: 14),
-            bgAlpha: 0.0,
-            bgFile: "",
+            bgAlpha: floatValue(data["bgAlpha"]),
+            bgFile: data["bgFile"] as? String ?? "",
             createdAt: int64Value(data["createdAt"]),
             updatedAt: int64Value(data["updatedAt"]),
             partnerIds: data["partnerIds"] as? [String] ?? []
@@ -201,6 +203,8 @@ final class FireStoreUserRepository: UserRepository {
             "phone": cardElementDictionary(element: card.phone),
             "organization": cardElementDictionary(element: card.organization),
             "title": cardElementDictionary(element: card.title),
+            "bgAlpha": card.bgAlpha,
+            "bgFile": card.bgFile,
             "createdAt": card.createdAt,
             "updatedAt": card.updatedAt,
             "partnerIds": card.partnerIds,
@@ -273,6 +277,21 @@ private func int64Value(_ value: Any?) -> Int64 {
         return value.int64Value
     default:
         return 0
+    }
+}
+
+private func floatValue(_ value: Any?) -> Float {
+    switch value {
+    case let value as Float:
+        return value
+    case let value as Double:
+        return Float(value)
+    case let value as Int:
+        return Float(value)
+    case let value as NSNumber:
+        return value.floatValue
+    default:
+        return 0.0
     }
 }
 

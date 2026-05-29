@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,6 +28,7 @@ fun CardPreviewScreen(
 ) {
     var pdfPath by remember(cardEntity.id) { mutableStateOf<String?>(null) }
     var errorMessage by remember(cardEntity.id) { mutableStateOf<String?>(null) }
+    val generatedPdfPaths = remember(cardEntity.id) { mutableStateListOf<String>() }
 
     LaunchedEffect(cardEntity) {
         pdfPath = null
@@ -34,17 +36,19 @@ fun CardPreviewScreen(
         runCatching {
             createCardPdf(cardEntity).filePath
         }.onSuccess { path ->
+            generatedPdfPaths += path
             pdfPath = path
         }.onFailure { throwable ->
             errorMessage = throwable.message ?: "PDFの作成に失敗しました"
         }
     }
 
-    DisposableEffect(pdfPath) {
+    DisposableEffect(cardEntity.id) {
         onDispose {
-            pdfPath?.let { path ->
+            generatedPdfPaths.forEach { path ->
                 deletePdfFileQuietly(path)
             }
+            generatedPdfPaths.clear()
         }
     }
 

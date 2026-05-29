@@ -6,6 +6,8 @@
         <true/>
         <key>NSCameraUsageDescription</key>
         <string>QRコードを読み取るためにカメラを使用します。</string>
+        <key>UIRequiresFullScreen</key>
+        <true/>
         <key>CFBundleURLTypes</key>
         <array>
             <dict>

@@ -14,6 +14,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
@@ -29,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.abplus.meishiplus.data.entities.CardEntity
+import com.abplus.meishiplus.resources.BusinessCardBackgroundOverlayMaxAlpha
+import com.abplus.meishiplus.resources.resolveBusinessCardBackgroundUri
 
 @Composable
 fun CardItem(
@@ -39,6 +42,10 @@ fun CardItem(
     onCardChange: (CardEntity) -> Unit = {},
     onLayoutChangeFinished: () -> Unit = {},
 ) {
+    LaunchedEffect(cardEntity.bgAlpha, cardEntity.bgFile) {
+        println("CardItem bgAlpha=${cardEntity.bgAlpha}, bgFile=${cardEntity.bgFile}")
+    }
+
     Card(
         modifier = modifier
             .clickable(
@@ -54,13 +61,18 @@ fun CardItem(
         Box(modifier = Modifier.fillMaxSize()) {
             if (cardEntity.bgFile.isNotBlank()) {
                 AsyncImage(
-                    model = cardEntity.bgFile,
+                    model = resolveBusinessCardBackgroundUri(cardEntity.bgFile),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            Box(Modifier.fillMaxSize().alpha(cardEntity.bgAlpha).background(Color.White))
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .alpha(cardEntity.bgAlpha.coerceIn(0f, BusinessCardBackgroundOverlayMaxAlpha))
+                    .background(Color.White),
+            )
 
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 CardText(

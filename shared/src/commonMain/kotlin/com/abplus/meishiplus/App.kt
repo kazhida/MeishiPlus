@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.entities.CardEntity
+import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
@@ -23,6 +24,7 @@ import com.abplus.meishiplus.ui.screens.CardExchangeScreen
 import com.abplus.meishiplus.ui.screens.CardLayoutScreen
 import com.abplus.meishiplus.ui.screens.CardPreviewScreen
 import com.abplus.meishiplus.ui.screens.CardPrintScreen
+import com.abplus.meishiplus.ui.screens.SnsAuthScreen
 import com.abplus.meishiplus.ui.screens.TabPagerScreen
 import com.abplus.meishiplus.viewmodel.UserUiState
 import com.abplus.meishiplus.viewmodel.UserViewModel
@@ -87,6 +89,19 @@ fun App(
                     },
                     onPreviewCard = { cardIndex ->
                         navController.navigate(CardPreviewRoute(cardIndex))
+                    },
+                    onSnsAuthClick = {
+                        navController.navigate(SnsAuthRoute) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable<SnsAuthRoute> {
+                SnsAuthScreen(
+                    userEntity = effectiveAppUser?.user ?: UserEntity(),
+                    onBackClick = {
+                        navController.popBackStack()
                     },
                 )
             }
@@ -185,6 +200,9 @@ fun App(
 
 @Serializable
 private data object HomeRoute
+
+@Serializable
+private data object SnsAuthRoute
 
 @Serializable
 private data class CardEntryRoute(val cardIndex: Int)

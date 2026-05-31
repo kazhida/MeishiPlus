@@ -3,8 +3,14 @@ package com.abplus.meishiplus.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abplus.meishiplus.auth.AuthUser
+import com.abplus.meishiplus.auth.FacebookAuth
+import com.abplus.meishiplus.auth.GithubAuth
+import com.abplus.meishiplus.auth.InstagramAuth
+import com.abplus.meishiplus.auth.QiitaAuth
+import com.abplus.meishiplus.auth.XAuth
 import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.entities.UserEntity
+import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
@@ -151,6 +157,246 @@ class UserViewModel(
         }
     }
 
+    fun authenticateQiitaAndSaveAccount(
+        code: String,
+        toErrorMessage: (Throwable) -> String = { throwable ->
+            throwable.message ?: "Qiita認証に失敗しました。"
+        },
+    ) {
+        val appUser = _uiState.value.appUser ?: return
+        if (code.isBlank()) {
+            _uiState.update {
+                it.copy(errorMessage = "Qiitaの認証コードを入力してください。")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                )
+            }
+
+            runCatching {
+                val qiitaAccount = QiitaAuth.authenticate(code = code)
+                val updatedUser = appUser.user.copy(
+                    accounts = appUser.user.accounts.upsertAccount(qiitaAccount),
+                )
+                userRepository.updateUser(updatedUser)
+                appUser.copy(user = updatedUser)
+            }.onSuccess { updatedAppUser ->
+                _uiState.update {
+                    it.copy(
+                        appUser = updatedAppUser,
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = toErrorMessage(throwable),
+                    )
+                }
+            }
+        }
+    }
+
+    fun authenticateXAndSaveAccount(
+        code: String,
+        toErrorMessage: (Throwable) -> String = { throwable ->
+            throwable.message ?: "X認証に失敗しました。"
+        },
+    ) {
+        val appUser = _uiState.value.appUser ?: return
+        if (code.isBlank()) {
+            _uiState.update {
+                it.copy(errorMessage = "Xの認証コードを取得できませんでした。")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                )
+            }
+
+            runCatching {
+                val xAccount = XAuth.authenticate(code = code)
+                val updatedUser = appUser.user.copy(
+                    accounts = appUser.user.accounts.upsertAccount(xAccount),
+                )
+                userRepository.updateUser(updatedUser)
+                appUser.copy(user = updatedUser)
+            }.onSuccess { updatedAppUser ->
+                _uiState.update {
+                    it.copy(
+                        appUser = updatedAppUser,
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = toErrorMessage(throwable),
+                    )
+                }
+            }
+        }
+    }
+
+    fun authenticateGithubAndSaveAccount(
+        code: String,
+        toErrorMessage: (Throwable) -> String = { throwable ->
+            throwable.message ?: "GitHub認証に失敗しました。"
+        },
+    ) {
+        val appUser = _uiState.value.appUser ?: return
+        if (code.isBlank()) {
+            _uiState.update {
+                it.copy(errorMessage = "GitHubの認証コードを取得できませんでした。")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                )
+            }
+
+            runCatching {
+                val githubAccount = GithubAuth.authenticate(code = code)
+                val updatedUser = appUser.user.copy(
+                    accounts = appUser.user.accounts.upsertAccount(githubAccount),
+                )
+                userRepository.updateUser(updatedUser)
+                appUser.copy(user = updatedUser)
+            }.onSuccess { updatedAppUser ->
+                _uiState.update {
+                    it.copy(
+                        appUser = updatedAppUser,
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = toErrorMessage(throwable),
+                    )
+                }
+            }
+        }
+    }
+
+    fun authenticateFacebookAndSaveAccount(
+        code: String,
+        toErrorMessage: (Throwable) -> String = { throwable ->
+            throwable.message ?: "Facebook認証に失敗しました。"
+        },
+    ) {
+        val appUser = _uiState.value.appUser ?: return
+        if (code.isBlank()) {
+            _uiState.update {
+                it.copy(errorMessage = "Facebookの認証コードを取得できませんでした。")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                )
+            }
+
+            runCatching {
+                val facebookAccount = FacebookAuth.authenticate(code = code)
+                val updatedUser = appUser.user.copy(
+                    accounts = appUser.user.accounts.upsertAccount(facebookAccount),
+                )
+                userRepository.updateUser(updatedUser)
+                appUser.copy(user = updatedUser)
+            }.onSuccess { updatedAppUser ->
+                _uiState.update {
+                    it.copy(
+                        appUser = updatedAppUser,
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = toErrorMessage(throwable),
+                    )
+                }
+            }
+        }
+    }
+
+    fun authenticateInstagramAndSaveAccount(
+        code: String,
+        toErrorMessage: (Throwable) -> String = { throwable ->
+            throwable.message ?: "Instagram認証に失敗しました。"
+        },
+    ) {
+        val appUser = _uiState.value.appUser ?: return
+        if (code.isBlank()) {
+            _uiState.update {
+                it.copy(errorMessage = "Instagramの認証コードを取得できませんでした。")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                )
+            }
+
+            runCatching {
+                val instagramAccount = InstagramAuth.authenticate(code = code)
+                val updatedUser = appUser.user.copy(
+                    accounts = appUser.user.accounts.upsertAccount(instagramAccount),
+                )
+                userRepository.updateUser(updatedUser)
+                appUser.copy(user = updatedUser)
+            }.onSuccess { updatedAppUser ->
+                _uiState.update {
+                    it.copy(
+                        appUser = updatedAppUser,
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = toErrorMessage(throwable),
+                    )
+                }
+            }
+        }
+    }
+
     private fun loadAppUser(uid: String) {
         viewModelScope.launch {
             runCatching {
@@ -186,5 +432,10 @@ class UserViewModel(
             cardRepository.getCards(userEntity.cardIds)
         }
         return AppUser(user = userEntity, cards = cards)
+    }
+
+    private fun List<Account>.upsertAccount(account: Account): List<Account> {
+        val accountService = account.service.lowercase()
+        return filterNot { it.service.lowercase() == accountService } + account
     }
 }

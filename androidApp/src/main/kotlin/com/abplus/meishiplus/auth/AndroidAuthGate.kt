@@ -2,6 +2,7 @@ package com.abplus.meishiplus.auth
 
 import android.app.Activity
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -42,14 +44,21 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
 
 @Composable
-fun AndroidAuthGate(userViewModel: UserViewModel) {
+fun AndroidAuthGate(
+    userViewModel: UserViewModel,
+    deepLinkUri: StateFlow<Uri?>? = null,
+    onDeepLinkConsumed: () -> Unit = {},
+) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val credentialManager = remember { CredentialManager.create(context) }
     val uiState by userViewModel.uiState.collectAsState()
+    val currentDeepLinkUri by (deepLinkUri ?: remember { MutableStateFlow<Uri?>(null) }).collectAsState()
 
     DisposableEffect(auth, userViewModel) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -59,6 +68,26 @@ fun AndroidAuthGate(userViewModel: UserViewModel) {
         onDispose {
             auth.removeAuthStateListener(listener)
         }
+    }
+
+    LaunchedEffect(currentDeepLinkUri, uiState.appUser) {
+        if (uiState.appUser == null) return@LaunchedEffect
+
+        currentDeepLinkUri
+            ?.takeIf { it.scheme == "mspls" }
+            ?.let { uri ->
+                val code = uri.getQueryParameter("code")?.takeIf { it.isNotBlank() } ?: return@let
+                when (uri.host) {
+                    "facebook" -> userViewModel.authenticateFacebookAndSaveAccount(code)
+                    "github" -> userViewModel.authenticateGithubAndSaveAccount(code)
+                    "instagram" -> userViewModel.authenticateInstagramAndSaveAccount(code)
+                    "qiita" -> userViewModel.authenticateQiitaAndSaveAccount(code)
+                    "qiiita" -> userViewModel.authenticateQiitaAndSaveAccount(code)
+                    "x" -> userViewModel.authenticateXAndSaveAccount(code)
+                    else -> return@let
+                }
+                onDeepLinkConsumed()
+            }
     }
 
     if (!uiState.isAuthResolved) {

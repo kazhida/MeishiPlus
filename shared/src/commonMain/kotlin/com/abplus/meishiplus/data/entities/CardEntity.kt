@@ -1,5 +1,7 @@
 package com.abplus.meishiplus.data.entities
 
+import com.abplus.meishiplus.data.model.Account
+
 data class CardEntity(
     val id: String = "",
     val ownerUid: String = "",
@@ -15,6 +17,7 @@ data class CardEntity(
     val bgFile: String = "",
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    val accounts: List<Account> = emptyList(),
     val partnerIds: List<String> = emptyList()
 ) {
     companion object {

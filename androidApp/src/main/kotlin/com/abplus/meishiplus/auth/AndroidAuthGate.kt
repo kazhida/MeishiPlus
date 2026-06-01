@@ -82,7 +82,6 @@ fun AndroidAuthGate(
                     "github" -> userViewModel.authenticateGithubAndSaveAccount(code)
                     "instagram" -> userViewModel.authenticateInstagramAndSaveAccount(code)
                     "qiita" -> userViewModel.authenticateQiitaAndSaveAccount(code)
-                    "qiiita" -> userViewModel.authenticateQiitaAndSaveAccount(code)
                     "x" -> userViewModel.authenticateXAndSaveAccount(code)
                     else -> return@let
                 }

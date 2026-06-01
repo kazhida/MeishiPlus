@@ -44,8 +44,10 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.firestore)
+            implementation(libs.google.play.services.auth)
             implementation(libs.kotlinx.coroutines.play.services)
             implementation(libs.ktor.client.android)
+            implementation(libs.slf4j.api)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.androidx.compose.ui.test.junit4)
@@ -79,6 +81,7 @@ kotlin {
         }
         jvmMain.dependencies {
             implementation(libs.ktor.client.java)
+            implementation(libs.slf4j.api)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

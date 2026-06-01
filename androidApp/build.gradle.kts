@@ -29,9 +29,11 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.google.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.hilt.android)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.slf4j.api)
     ksp(libs.hilt.compiler)
 
     implementation(libs.compose.uiToolingPreview)

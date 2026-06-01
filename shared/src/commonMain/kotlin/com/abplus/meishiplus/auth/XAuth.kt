@@ -33,12 +33,13 @@ object XAuth {
         redirectUri: String = DEFAULT_REDIRECT_URI,
         codeChallenge: String = DEFAULT_CODE_VERIFIER,
         scope: String = DEFAULT_SCOPE,
-        state: String = "",
+        state: String = DEFAULT_STATE,
         codeChallengeMethod: String = CODE_CHALLENGE_METHOD_PLAIN,
     ): String {
         require(redirectUri.isNotBlank()) { "redirectUri must not be blank." }
         require(codeChallenge.isNotBlank()) { "codeChallenge must not be blank." }
         require(codeChallenge.length in PKCE_LENGTH_RANGE) { "codeChallenge must be 43 to 128 characters." }
+        require(state.isNotBlank()) { "state must not be blank." }
 
         return URLBuilder(AUTHORIZATION_URL).apply {
             parameters.append("response_type", "code")
@@ -47,9 +48,7 @@ object XAuth {
             parameters.append("scope", scope)
             parameters.append("code_challenge", codeChallenge)
             parameters.append("code_challenge_method", codeChallengeMethod)
-            if (state.isNotBlank()) {
-                parameters.append("state", state)
-            }
+            parameters.append("state", state)
         }.buildString()
     }
 
@@ -92,14 +91,19 @@ object XAuth {
         val resolvedClientSecret = clientSecret ?: defaultClientSecret()
         val response = httpClient.post(TOKEN_URL) {
             accept(ContentType.Application.Json)
-            headers {
-                append(HttpHeaders.Authorization, basicAuthHeader(resolvedClientId, resolvedClientSecret))
+            if (resolvedClientSecret.isNotBlank()) {
+                headers {
+                    append(HttpHeaders.Authorization, basicAuthHeader(resolvedClientId, resolvedClientSecret))
+                }
             }
             setBody(
                 FormDataContent(
                     Parameters.build {
                         append("code", code)
                         append("grant_type", "authorization_code")
+                        if (resolvedClientSecret.isBlank()) {
+                            append("client_id", resolvedClientId)
+                        }
                         append("redirect_uri", redirectUri)
                         append("code_verifier", codeVerifier)
                     },
@@ -109,10 +113,14 @@ object XAuth {
 
         if (response.status.value !in 200..299) {
             val body = response.bodyAsText()
-            error("X authentication failed: ${response.status.value} ${response.status.description}. $body".trim())
+            error("X token exchange failed: ${response.status.value} ${response.status.description}. $body".trim())
         }
 
-        return response.body<AccessTokenResponse>().accessToken
+        val token = response.body<AccessTokenResponse>()
+        if (token.scope?.split(" ").orEmpty().none { it == "users.read" }) {
+            error("X access token does not include users.read scope: ${token.scope.orEmpty()}".trim())
+        }
+        return token.accessToken
     }
 
     suspend fun getAuthenticatedAccount(
@@ -130,7 +138,7 @@ object XAuth {
 
         if (response.status.value !in 200..299) {
             val body = response.bodyAsText()
-            error("X authentication failed: ${response.status.value} ${response.status.description}. $body".trim())
+            error("X authenticated user request failed: ${response.status.value} ${response.status.description}. $body".trim())
         }
 
         val user = response.body<AuthenticatedUserResponse>().data
@@ -168,6 +176,9 @@ object XAuth {
     private data class AccessTokenResponse(
         @SerialName("access_token")
         val accessToken: String,
+        @SerialName("token_type")
+        val tokenType: String? = null,
+        val scope: String? = null,
     )
 
     @Serializable
@@ -187,6 +198,7 @@ object XAuth {
     private const val X_WEB_BASE_URL = "https://x.com"
     private const val SERVICE = "x"
     private const val DEFAULT_SCOPE = "users.read"
+    private const val DEFAULT_STATE = "meishiplus-x-auth"
     private const val DEFAULT_CODE_VERIFIER = "meishiplus-x-oauth-code-verifier-0123456789abcdef"
     private const val CODE_CHALLENGE_METHOD_PLAIN = "plain"
     const val DEFAULT_REDIRECT_URI = "mspls://x"

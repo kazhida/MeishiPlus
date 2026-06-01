@@ -1,0 +1,20 @@
+runtime: python312
+
+handlers:
+  - url: /css
+    static_dir: css
+    secure: always
+
+  - url: /js
+    static_dir: js
+    secure: always
+
+  - url: /(favicon\.ico|icon\.svg|icon\.png|robots\.txt|site\.webmanifest)
+    static_files: \1
+    upload: (favicon\.ico|icon\.svg|icon\.png|robots\.txt|site\.webmanifest)
+    secure: always
+
+  - url: /.*
+    static_files: index.html
+    upload: index.html
+    secure: always

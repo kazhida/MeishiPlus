@@ -45,7 +45,6 @@ import meishiplus.shared.generated.resources.ic_sns_facebook
 import meishiplus.shared.generated.resources.ic_sns_github
 import meishiplus.shared.generated.resources.ic_sns_instagram
 import meishiplus.shared.generated.resources.ic_sns_qiita
-import meishiplus.shared.generated.resources.ic_sns_x
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -65,6 +64,11 @@ fun SnsAuthScreen(
             account = userEntity.accounts.firstOrNull { it is Account.Github || it.service == "github" },
         ),
         SnsAccountItemSpec(
+            serviceName = "Qiita",
+            icon = Res.drawable.ic_sns_qiita,
+            account = userEntity.accounts.firstOrNull { it is Account.Qiita || it.service == "qiita" },
+        ),
+        SnsAccountItemSpec(
             serviceName = "Facebook",
             icon = Res.drawable.ic_sns_facebook,
             account = userEntity.accounts.firstOrNull { it is Account.Facebook || it.service == "facebook" },
@@ -73,16 +77,6 @@ fun SnsAuthScreen(
             serviceName = "Instagram",
             icon = Res.drawable.ic_sns_instagram,
             account = userEntity.accounts.firstOrNull { it is Account.Instagram || it.service == "instagram" },
-        ),
-        SnsAccountItemSpec(
-            serviceName = "X",
-            icon = Res.drawable.ic_sns_x,
-            account = userEntity.accounts.firstOrNull { it is Account.X || it.service == "x" || it.service == "twitter" },
-        ),
-        SnsAccountItemSpec(
-            serviceName = "Qiita",
-            icon = Res.drawable.ic_sns_qiita,
-            account = userEntity.accounts.firstOrNull { it is Account.Qiita || it.service == "qiita" },
         ),
     )
 
@@ -130,7 +124,9 @@ fun SnsAuthScreen(
                         "Facebook" -> {
                             {
                                 coroutineScope.launch {
-                                    uriHandler.openUri(FacebookAuth.authorizationUrl())
+                                    val url = FacebookAuth.authorizationUrl()
+                                    println("DEBUG Facebook authorizationUrl: $url")
+                                    uriHandler.openUri(url)
                                 }
                             }
                         }

@@ -82,7 +82,6 @@ fun AndroidAuthGate(
                     "github" -> userViewModel.authenticateGithubAndSaveAccount(code)
                     "instagram" -> userViewModel.authenticateInstagramAndSaveAccount(code)
                     "qiita" -> userViewModel.authenticateQiitaAndSaveAccount(code)
-                    "x" -> userViewModel.authenticateXAndSaveAccount(code)
                     else -> return@let
                 }
                 onDeepLinkConsumed()
@@ -90,6 +89,11 @@ fun AndroidAuthGate(
     }
 
     if (!uiState.isAuthResolved) {
+        AuthLoadingScreen()
+        return
+    }
+
+    if (uiState.authUser != null && uiState.appUser == null && uiState.isLoading) {
         AuthLoadingScreen()
         return
     }

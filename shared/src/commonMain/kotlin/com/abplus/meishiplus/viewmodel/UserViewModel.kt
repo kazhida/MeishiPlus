@@ -7,7 +7,6 @@ import com.abplus.meishiplus.auth.FacebookAuth
 import com.abplus.meishiplus.auth.GithubAuth
 import com.abplus.meishiplus.auth.InstagramAuth
 import com.abplus.meishiplus.auth.QiitaAuth
-import com.abplus.meishiplus.auth.XAuth
 import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.model.Account
@@ -49,6 +48,7 @@ class UserViewModel(
                 authUser = authUser,
                 appUser = null,
                 isAuthResolved = true,
+                isLoading = true,
                 errorMessage = null,
             )
         }
@@ -183,54 +183,6 @@ class UserViewModel(
                 val qiitaAccount = QiitaAuth.authenticate(code = code)
                 val updatedUser = appUser.user.copy(
                     accounts = appUser.user.accounts.upsertAccount(qiitaAccount),
-                )
-                userRepository.updateUser(updatedUser)
-                appUser.copy(user = updatedUser)
-            }.onSuccess { updatedAppUser ->
-                _uiState.update {
-                    it.copy(
-                        appUser = updatedAppUser,
-                        isLoading = false,
-                        errorMessage = null,
-                    )
-                }
-            }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = toErrorMessage(throwable),
-                    )
-                }
-            }
-        }
-    }
-
-    fun authenticateXAndSaveAccount(
-        code: String,
-        toErrorMessage: (Throwable) -> String = { throwable ->
-            throwable.message ?: "X認証に失敗しました。"
-        },
-    ) {
-        val appUser = _uiState.value.appUser ?: return
-        if (code.isBlank()) {
-            _uiState.update {
-                it.copy(errorMessage = "Xの認証コードを取得できませんでした。")
-            }
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    errorMessage = null,
-                )
-            }
-
-            runCatching {
-                val xAccount = XAuth.authenticate(code = code)
-                val updatedUser = appUser.user.copy(
-                    accounts = appUser.user.accounts.upsertAccount(xAccount),
                 )
                 userRepository.updateUser(updatedUser)
                 appUser.copy(user = updatedUser)
@@ -399,12 +351,20 @@ class UserViewModel(
 
     private fun loadAppUser(uid: String) {
         viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                )
+            }
+
             runCatching {
                 initializeUser(uid)
             }.onSuccess { appUser ->
                 _uiState.update {
                     it.copy(
                         appUser = appUser,
+                        isLoading = false,
                         errorMessage = null,
                     )
                 }
@@ -412,6 +372,7 @@ class UserViewModel(
                 _uiState.update {
                     it.copy(
                         appUser = null,
+                        isLoading = false,
                         errorMessage = throwable.message ?: "ユーザー情報を取得できませんでした。",
                     )
                 }

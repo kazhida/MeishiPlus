@@ -36,7 +36,6 @@ import com.abplus.meishiplus.auth.FacebookAuth
 import com.abplus.meishiplus.auth.GithubAuth
 import com.abplus.meishiplus.auth.InstagramAuth
 import com.abplus.meishiplus.auth.QiitaAuth
-import com.abplus.meishiplus.auth.XAuth
 import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.model.Account
 import kotlinx.coroutines.launch
@@ -146,13 +145,6 @@ fun SnsAuthScreen(
                             {
                                 coroutineScope.launch {
                                     uriHandler.openUri(QiitaAuth.authorizationUrl())
-                                }
-                            }
-                        }
-                        "X" -> {
-                            {
-                                coroutineScope.launch {
-                                    uriHandler.openUri(XAuth.authorizationUrl())
                                 }
                             }
                         }

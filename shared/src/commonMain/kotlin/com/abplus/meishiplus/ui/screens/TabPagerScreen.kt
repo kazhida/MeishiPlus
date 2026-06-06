@@ -81,7 +81,7 @@ fun TabPagerScreen(
     val tabs = if (cards.isNotEmpty()) {
         cards.mapIndexed { index, card -> card.caption.ifBlank { "名刺${index + 1}" } }
     } else {
-        listOf("基本", "詳細", "設定", "履歴", "その他")
+        listOf("------")
     }
     val drawerItems = listOf(
         DrawerItem("ホーム", Res.drawable.ic_home),

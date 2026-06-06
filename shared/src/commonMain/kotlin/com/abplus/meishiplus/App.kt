@@ -18,6 +18,7 @@ import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
+import com.abplus.meishiplus.data.usecase.UserInit
 import com.abplus.meishiplus.ui.screens.CardEntryScreen
 import com.abplus.meishiplus.ui.screens.CardExchangeScreen
 import com.abplus.meishiplus.ui.screens.CardLayoutScreen
@@ -44,7 +45,7 @@ fun App(
     val ownedUserViewModel = remember(userRepository, cardRepository) {
         if (userRepository != null && cardRepository != null) {
             UserViewModel(
-                userRepository = userRepository,
+                userInit = UserInit(userRepository, cardRepository),
                 cardRepository = cardRepository,
             )
         } else {

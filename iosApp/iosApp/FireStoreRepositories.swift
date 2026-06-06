@@ -120,46 +120,9 @@ final class FireStoreUserRepository: UserRepository {
 
     func addUser(user: UserEntity) async throws -> UserEntity {
         let userId = user.id.isEmpty ? users.document().documentID : user.id
-        let userDocument = users.document(userId)
-        let existingSnapshot = try await userDocument.getDocument()
-        let existingUser = existingSnapshot
-            .data()
-            .map { Self.userEntity(id: userId, data: $0) }
-        if let existingUser, !existingUser.cardIds.isEmpty {
-            return existingUser
-        }
-
-        let userWithoutCards = Self.userEntity(
-            user: existingUser ?? user,
-            id: userId,
-            cardIds: []
-        )
-        if existingUser == nil {
-            try await userDocument.setData(Self.dictionary(user: userWithoutCards))
-        }
-
-        let cardDocuments = (0..<Self.defaultCardCount).map { index in
-            cards.document(Self.defaultCardId(userId: userId, index: index))
-        }
-        let cardIds = cardDocuments.map(\.documentID)
-        let userWithCards = Self.userEntity(
-            user: userWithoutCards,
-            id: userWithoutCards.id,
-            cardIds: cardIds
-        )
-        let batch = Firestore.firestore().batch()
-
-        for document in cardDocuments {
-            batch.setData(
-                Self.dictionary(card: Self.defaultCard(id: document.documentID, ownerUid: userId)),
-                forDocument: document
-            )
-        }
-        try await batch.commit()
-
-        try await userDocument.setData(Self.dictionary(user: userWithCards))
-
-        return userWithCards
+        let userWithId = Self.userEntity(user: user, id: userId, cardIds: user.cardIds)
+        try await users.document(userId).setData(Self.dictionary(user: userWithId))
+        return userWithId
     }
 
     func getUser(id: String) async throws -> UserEntity {
@@ -211,26 +174,6 @@ final class FireStoreUserRepository: UserRepository {
         ]
     }
 
-    private static func defaultCard(id: String, ownerUid: String) -> CardEntity {
-        CardEntity(
-            id: id,
-            ownerUid: ownerUid,
-            caption: "",
-            name: cardElement("氏名", defaultValue: "氏名", x: 0.07, y: 0.33, fontSize: 24),
-            email: cardElement("mail@example.com", defaultValue: "mail@example.com", x: 0.20, y: 0.66, fontSize: 12),
-            address1: cardElement("住所", defaultValue: "住所", x: 0.20, y: 0.77, fontSize: 12),
-            address2: cardElement("", defaultValue: "", x: 0.20, y: 0.77, fontSize: 12),
-            phone: cardElement("電話番号", defaultValue: "電話番号", x: 0.20, y: 0.55, fontSize: 12),
-            organization: cardElement("組織", defaultValue: "組織", x: 0.07, y: 0.12, fontSize: 14),
-            title: cardElement("肩書き", defaultValue: "肩書き", x: 0.07, y: 0.23, fontSize: 14),
-            bgAlpha: 0.0,
-            bgFile: "",
-            createdAt: 0,
-            updatedAt: 0,
-            partnerIds: []
-        )
-    }
-
     private static func userEntity(user: UserEntity, id: String, cardIds: [String]) -> UserEntity {
         UserEntity(
             id: id,
@@ -249,11 +192,7 @@ final class FireStoreUserRepository: UserRepository {
         )
     }
 
-    private static let defaultCardCount = 4
 
-    private static func defaultCardId(userId: String, index: Int) -> String {
-        "\(userId)_default_card_\(index)"
-    }
 }
 
 private enum RepositoryError: LocalizedError {

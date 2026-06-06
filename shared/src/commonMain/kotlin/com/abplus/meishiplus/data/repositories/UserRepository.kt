@@ -1,5 +1,6 @@
 package com.abplus.meishiplus.data.repositories
 
+import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.entities.UserEntity
 
 interface UserRepository {

@@ -1,5 +1,6 @@
 package com.abplus.meishiplus.data.repositories
 
+import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.entities.UserEntity
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -64,7 +65,7 @@ private class InMemoryUserRepository : UserRepository {
     private val users = mutableMapOf<String, UserEntity>()
     private var nextId = 0
 
-    override suspend fun addUser(user: UserEntity): UserEntity {
+    override suspend fun addUser(user: UserEntity, authUser: AuthUser): UserEntity {
         val id = user.id.ifBlank { "user-${nextId++}" }
         val userWithId = user.copy(id = id)
         users[id] = userWithId

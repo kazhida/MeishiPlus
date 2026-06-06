@@ -6,7 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
 class FireStoreUserRepository(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
 ) : UserRepository {
     private val users = firestore.collection(USERS_COLLECTION)
 

@@ -1,5 +1,8 @@
 package com.abplus.meishiplus.data.entities
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class UserEntity(
     val id: String = "",
     val createdAt: Long = 0L,

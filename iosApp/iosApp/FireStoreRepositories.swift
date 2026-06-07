@@ -2,7 +2,11 @@ import FirebaseFirestore
 import Shared
 
 final class FireStoreCardRepository: CardRepository {
-    private let cards = Firestore.firestore().collection("cards")
+    private let cards: CollectionReference
+
+    init(firestore: Firestore = Firestore.firestore()) {
+        self.cards = firestore.collection(Self.cardsCollection)
+    }
 
     func addCard(card: CardEntity) async throws -> CardEntity {
         let document = cards.document()
@@ -24,21 +28,12 @@ final class FireStoreCardRepository: CardRepository {
             return []
         }
 
-        return try await withThrowingTaskGroup(of: (Int, CardEntity).self) { group in
-            for (index, id) in cardIds.enumerated() {
-                group.addTask {
-                    (index, try await self.getCard(id: id))
-                }
-            }
-
-            var indexedCards: [(Int, CardEntity)] = []
-            for try await indexedCard in group {
-                indexedCards.append(indexedCard)
-            }
-            return indexedCards
-                .sorted { $0.0 < $1.0 }
-                .map { $0.1 }
+        var cards: [CardEntity] = []
+        cards.reserveCapacity(cardIds.count)
+        for id in cardIds {
+            cards.append(try await getCard(id: id))
         }
+        return cards
     }
 
     func saveCard(card: CardEntity) async throws {
@@ -51,6 +46,12 @@ final class FireStoreCardRepository: CardRepository {
 
     func deleteCard(id: String) async throws {
         try await cards.document(id).delete()
+    }
+
+    func appendPartnerId(cardId: String, partnerCardId: String) async throws {
+        try await cards.document(cardId).updateData([
+            "partnerIds": FieldValue.arrayUnion([partnerCardId]),
+        ])
     }
 
     private static func dictionary(card: CardEntity) -> [String: Any] {
@@ -112,11 +113,16 @@ final class FireStoreCardRepository: CardRepository {
             partnerIds: data["partnerIds"] as? [String] ?? []
         )
     }
+
+    private static let cardsCollection = "cards"
 }
 
 final class FireStoreUserRepository: UserRepository {
-    private let users = Firestore.firestore().collection("users")
-    private let cards = Firestore.firestore().collection("cards")
+    private let users: CollectionReference
+
+    init(firestore: Firestore = Firestore.firestore()) {
+        self.users = firestore.collection(Self.usersCollection)
+    }
 
     func addUser(user: UserEntity) async throws -> UserEntity {
         let userId = user.id.isEmpty ? users.document().documentID : user.id
@@ -154,26 +160,6 @@ final class FireStoreUserRepository: UserRepository {
         ]
     }
 
-    private static func dictionary(card: CardEntity) -> [String: Any] {
-        [
-            "id": card.id,
-            "ownerUid": card.ownerUid,
-            "caption": card.caption,
-            "name": cardElementDictionary(element: card.name),
-            "email": cardElementDictionary(element: card.email),
-            "address1": cardElementDictionary(element: card.address1),
-            "address2": cardElementDictionary(element: card.address2),
-            "phone": cardElementDictionary(element: card.phone),
-            "organization": cardElementDictionary(element: card.organization),
-            "title": cardElementDictionary(element: card.title),
-            "bgAlpha": card.bgAlpha,
-            "bgFile": card.bgFile,
-            "createdAt": card.createdAt,
-            "updatedAt": card.updatedAt,
-            "partnerIds": card.partnerIds,
-        ]
-    }
-
     private static func userEntity(user: UserEntity, id: String, cardIds: [String]) -> UserEntity {
         UserEntity(
             id: id,
@@ -192,7 +178,7 @@ final class FireStoreUserRepository: UserRepository {
         )
     }
 
-
+    private static let usersCollection = "users"
 }
 
 private enum RepositoryError: LocalizedError {

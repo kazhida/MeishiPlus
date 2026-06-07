@@ -2,6 +2,7 @@ package com.abplus.meishiplus.data.repositories.firestore
 
 import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.repositories.CardRepository
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -49,6 +50,15 @@ class FireStoreCardRepository(
 
     override suspend fun updateCard(card: CardEntity) {
         saveCard(card)
+    }
+
+    override suspend fun appendPartnerId(cardId: String, partnerCardId: String) {
+        cards.document(cardId)
+            .update(
+                "partnerIds",
+                FieldValue.arrayUnion(partnerCardId),
+            )
+            .await()
     }
 
     private companion object {

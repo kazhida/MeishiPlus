@@ -18,6 +18,7 @@ import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
+import com.abplus.meishiplus.data.usecase.exchangeCard
 import com.abplus.meishiplus.data.usecase.UserInit
 import com.abplus.meishiplus.ui.screens.CardEntryScreen
 import com.abplus.meishiplus.ui.screens.CardExchangeScreen
@@ -177,6 +178,18 @@ fun App(
                     cardEntity = card,
                     onBackClick = {
                         navController.popBackStack()
+                    },
+                    onCardScanned = { scannedCardId ->
+                        val currentAuthUser = authUser
+                        val repository = cardRepository
+                        if (currentAuthUser != null && repository != null) {
+                            exchangeCard(
+                                cardRepository = repository,
+                                currentUid = currentAuthUser.uid,
+                                currentCardId = card.id,
+                                partnerCardId = scannedCardId,
+                            )
+                        }
                     },
                 )
             }

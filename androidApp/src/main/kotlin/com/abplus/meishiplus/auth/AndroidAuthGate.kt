@@ -35,6 +35,8 @@ import androidx.credentials.exceptions.GetCredentialProviderConfigurationExcepti
 import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.exceptions.NoCredentialException
 import com.abplus.meishiplus.App
+import com.abplus.meishiplus.data.repositories.CardRepository
+import com.abplus.meishiplus.data.repositories.UserRepository
 import com.abplus.meishiplus.viewmodel.UserViewModel
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -45,7 +47,11 @@ import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.tasks.await
 
 @Composable
-fun AndroidAuthGate(userViewModel: UserViewModel) {
+fun AndroidAuthGate(
+    userViewModel: UserViewModel,
+    userRepository: UserRepository,
+    cardRepository: CardRepository,
+) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val credentialManager = remember { CredentialManager.create(context) }
@@ -78,6 +84,8 @@ fun AndroidAuthGate(userViewModel: UserViewModel) {
             appUser = uiState.appUser,
             errorMessage = uiState.errorMessage,
             userViewModel = userViewModel,
+            userRepository = userRepository,
+            cardRepository = cardRepository,
         )
         return
     }

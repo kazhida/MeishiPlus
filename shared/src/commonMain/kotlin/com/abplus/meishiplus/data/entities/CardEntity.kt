@@ -1,5 +1,8 @@
 package com.abplus.meishiplus.data.entities
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class CardEntity(
     val id: String = "",
     val ownerUid: String = "",
@@ -36,6 +39,7 @@ data class CardEntity(
         )
     }
 
+    @Serializable
     data class CardElement(
         val value: String = "",
         var x: Float = 0f,

@@ -2,7 +2,11 @@ import FirebaseFirestore
 import Shared
 
 final class FireStoreCardRepository: CardRepository {
-    private let cards = Firestore.firestore().collection("cards")
+    private let cards: CollectionReference
+
+    init(firestore: Firestore = Firestore.firestore()) {
+        self.cards = firestore.collection(Self.cardsCollection)
+    }
 
     func addCard(card: CardEntity) async throws -> CardEntity {
         let document = cards.document()
@@ -24,19 +28,12 @@ final class FireStoreCardRepository: CardRepository {
             return []
         }
 
-        return try await withThrowingTaskGroup(of: CardEntity.self) { group in
-            for id in cardIds {
-                group.addTask {
-                    try await self.getCard(id: id)
-                }
-            }
-
-            var results: [CardEntity] = []
-            for try await card in group {
-                results.append(card)
-            }
-            return results
+        var cards: [CardEntity] = []
+        cards.reserveCapacity(cardIds.count)
+        for id in cardIds {
+            cards.append(try await getCard(id: id))
         }
+        return cards
     }
 
     func saveCard(card: CardEntity) async throws {
@@ -49,6 +46,12 @@ final class FireStoreCardRepository: CardRepository {
 
     func deleteCard(id: String) async throws {
         try await cards.document(id).delete()
+    }
+
+    func appendPartnerId(cardId: String, partnerCardId: String) async throws {
+        try await cards.document(cardId).updateData([
+            "partnerIds": FieldValue.arrayUnion([partnerCardId]),
+        ])
     }
 
     private static func dictionary(card: CardEntity) -> [String: Any] {
@@ -103,61 +106,29 @@ final class FireStoreCardRepository: CardRepository {
             phone: cardElement(data["phone"], defaultValue: "電話番号", x: 0.20, y: 0.55, fontSize: 12),
             organization: cardElement(data["organization"], defaultValue: "組織", x: 0.07, y: 0.12, fontSize: 14),
             title: cardElement(data["title"], defaultValue: "肩書き", x: 0.07, y: 0.23, fontSize: 14),
-            bgAlpha: 0.0,
-            bgFile: "",
+            bgAlpha: floatValue(data["bgAlpha"]),
+            bgFile: data["bgFile"] as? String ?? "",
             createdAt: int64Value(data["createdAt"]),
             updatedAt: int64Value(data["updatedAt"]),
             partnerIds: data["partnerIds"] as? [String] ?? []
         )
     }
+
+    private static let cardsCollection = "cards"
 }
 
 final class FireStoreUserRepository: UserRepository {
-    private let users = Firestore.firestore().collection("users")
-    private let cards = Firestore.firestore().collection("cards")
+    private let users: CollectionReference
+
+    init(firestore: Firestore = Firestore.firestore()) {
+        self.users = firestore.collection(Self.usersCollection)
+    }
 
     func addUser(user: UserEntity) async throws -> UserEntity {
         let userId = user.id.isEmpty ? users.document().documentID : user.id
-        let userDocument = users.document(userId)
-        let existingSnapshot = try await userDocument.getDocument()
-        let existingUser = existingSnapshot
-            .data()
-            .map { Self.userEntity(id: userId, data: $0) }
-        if let existingUser, !existingUser.cardIds.isEmpty {
-            return existingUser
-        }
-
-        let userWithoutCards = Self.userEntity(
-            user: existingUser ?? user,
-            id: userId,
-            cardIds: []
-        )
-        if existingUser == nil {
-            try await userDocument.setData(Self.dictionary(user: userWithoutCards))
-        }
-
-        let cardDocuments = (0..<Self.defaultCardCount).map { index in
-            cards.document(Self.defaultCardId(userId: userId, index: index))
-        }
-        let cardIds = cardDocuments.map(\.documentID)
-        let userWithCards = Self.userEntity(
-            user: userWithoutCards,
-            id: userWithoutCards.id,
-            cardIds: cardIds
-        )
-        let batch = Firestore.firestore().batch()
-
-        for document in cardDocuments {
-            batch.setData(
-                Self.dictionary(card: Self.defaultCard(id: document.documentID, ownerUid: userId)),
-                forDocument: document
-            )
-        }
-        try await batch.commit()
-
-        try await userDocument.setData(Self.dictionary(user: userWithCards))
-
-        return userWithCards
+        let userWithId = Self.userEntity(user: user, id: userId, cardIds: user.cardIds)
+        try await users.document(userId).setData(Self.dictionary(user: userWithId))
+        return userWithId
     }
 
     func getUser(id: String) async throws -> UserEntity {
@@ -189,44 +160,6 @@ final class FireStoreUserRepository: UserRepository {
         ]
     }
 
-    private static func dictionary(card: CardEntity) -> [String: Any] {
-        [
-            "id": card.id,
-            "ownerUid": card.ownerUid,
-            "caption": card.caption,
-            "name": cardElementDictionary(element: card.name),
-            "email": cardElementDictionary(element: card.email),
-            "address1": cardElementDictionary(element: card.address1),
-            "address2": cardElementDictionary(element: card.address2),
-            "phone": cardElementDictionary(element: card.phone),
-            "organization": cardElementDictionary(element: card.organization),
-            "title": cardElementDictionary(element: card.title),
-            "createdAt": card.createdAt,
-            "updatedAt": card.updatedAt,
-            "partnerIds": card.partnerIds,
-        ]
-    }
-
-    private static func defaultCard(id: String, ownerUid: String) -> CardEntity {
-        CardEntity(
-            id: id,
-            ownerUid: ownerUid,
-            caption: "",
-            name: cardElement("氏名", defaultValue: "氏名", x: 0.07, y: 0.33, fontSize: 24),
-            email: cardElement("mail@example.com", defaultValue: "mail@example.com", x: 0.20, y: 0.66, fontSize: 12),
-            address1: cardElement("住所", defaultValue: "住所", x: 0.20, y: 0.77, fontSize: 12),
-            address2: cardElement("", defaultValue: "", x: 0.20, y: 0.77, fontSize: 12),
-            phone: cardElement("電話番号", defaultValue: "電話番号", x: 0.20, y: 0.55, fontSize: 12),
-            organization: cardElement("組織", defaultValue: "組織", x: 0.07, y: 0.12, fontSize: 14),
-            title: cardElement("肩書き", defaultValue: "肩書き", x: 0.07, y: 0.23, fontSize: 14),
-            bgAlpha: 0.0,
-            bgFile: "",
-            createdAt: 0,
-            updatedAt: 0,
-            partnerIds: []
-        )
-    }
-
     private static func userEntity(user: UserEntity, id: String, cardIds: [String]) -> UserEntity {
         UserEntity(
             id: id,
@@ -245,11 +178,7 @@ final class FireStoreUserRepository: UserRepository {
         )
     }
 
-    private static let defaultCardCount = 4
-
-    private static func defaultCardId(userId: String, index: Int) -> String {
-        "\(userId)_default_card_\(index)"
-    }
+    private static let usersCollection = "users"
 }
 
 private enum RepositoryError: LocalizedError {
@@ -273,6 +202,21 @@ private func int64Value(_ value: Any?) -> Int64 {
         return value.int64Value
     default:
         return 0
+    }
+}
+
+private func floatValue(_ value: Any?) -> Float {
+    switch value {
+    case let value as Float:
+        return value
+    case let value as Double:
+        return Float(value)
+    case let value as Int:
+        return Float(value)
+    case let value as NSNumber:
+        return value.floatValue
+    default:
+        return 0.0
     }
 }
 

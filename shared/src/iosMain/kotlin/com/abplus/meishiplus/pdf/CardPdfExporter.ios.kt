@@ -1,6 +1,8 @@
 package com.abplus.meishiplus.pdf
 
 import com.abplus.meishiplus.data.entities.CardEntity
+import com.abplus.meishiplus.resources.BusinessCardBackgroundOverlayMaxAlpha
+import com.abplus.meishiplus.resources.resolveBusinessCardBackgroundUri
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreGraphics.CGContextClipToRect
@@ -16,10 +18,11 @@ import platform.CoreGraphics.CGContextSetStrokeColorWithColor
 import platform.CoreGraphics.CGContextStrokeRect
 import platform.CoreGraphics.CGContextTranslateCTM
 import platform.CoreGraphics.CGRectMake
-import platform.Foundation.NSAttributedStringKey
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSData
 import platform.Foundation.NSDate
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSLog
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSString
 import platform.Foundation.NSURL
@@ -43,6 +46,18 @@ import platform.UIKit.popoverPresentationController
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
+
+@OptIn(ExperimentalForeignApi::class)
+actual fun deletePdfFileQuietly(filePath: String) {
+    runCatching {
+        val deleted = NSFileManager.defaultManager.removeItemAtPath(filePath, null)
+        if (!deleted) {
+            NSLog("Failed to delete PDF file: %@", filePath)
+        }
+    }.onFailure { throwable ->
+        NSLog("Failed to delete PDF file: %@ (%@)", filePath, throwable.message ?: "unknown error")
+    }
+}
 
 @OptIn(ExperimentalForeignApi::class)
 actual suspend fun createCardPdf(cardEntity: CardEntity): CardPdfExportResult {
@@ -199,7 +214,7 @@ private fun drawCardPdf(
         val context = platform.UIKit.UIGraphicsGetCurrentContext()
         if (context != null) {
             CGContextSaveGState(context)
-            CGContextSetAlpha(context, cardEntity.bgAlpha.coerceIn(0f, 1f).toDouble())
+            CGContextSetAlpha(context, cardEntity.bgAlpha.coerceIn(0f, BusinessCardBackgroundOverlayMaxAlpha).toDouble())
             CGContextSetFillColorWithColor(context, UIColor.whiteColor.CGColor)
             platform.UIKit.UIRectFill(rect)
             CGContextRestoreGState(context)
@@ -287,10 +302,11 @@ private fun CardEntity.CardElement.labelElement(label: String): CardEntity.CardE
 )
 
 private fun loadImage(uri: String): UIImage? {
-    val data = if (uri.startsWith("file://")) {
-        NSURL.URLWithString(uri)?.let { NSData.dataWithContentsOfURL(it) }
+    val resolvedUri = resolveBusinessCardBackgroundUri(uri)
+    val data = if (resolvedUri.startsWith("file://")) {
+        NSURL.URLWithString(resolvedUri)?.let { NSData.dataWithContentsOfURL(it) }
     } else {
-        NSData.dataWithContentsOfFile(uri)
+        NSData.dataWithContentsOfFile(resolvedUri)
     }
     return data?.let { UIImage.imageWithData(it) }
 }

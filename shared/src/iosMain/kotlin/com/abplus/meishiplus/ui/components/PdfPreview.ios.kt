@@ -2,7 +2,6 @@ package com.abplus.meishiplus.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.interop.UIKitView
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSURL
@@ -18,27 +17,30 @@ actual fun PdfPreview(
     rotateClockwise: Boolean,
     fillBounds: Boolean,
 ) {
-    val previewModifier = if (rotateClockwise) {
-        modifier.graphicsLayer {
-            rotationZ = 90f
-            scaleX = if (fillBounds) 1.4f else 1f
-            scaleY = if (fillBounds) 1.4f else 1f
-        }
-    } else {
-        modifier
-    }
-
     UIKitView(
         factory = {
             PDFView().apply {
                 autoScales = true
                 backgroundColor = UIColor.whiteColor
-                document = PDFDocument(NSURL.fileURLWithPath(filePath))
+                document = loadPreviewDocument(filePath, rotateClockwise)
             }
         },
-        modifier = previewModifier,
+        modifier = modifier,
         update = { view ->
-            view.document = PDFDocument(NSURL.fileURLWithPath(filePath))
+            view.document = loadPreviewDocument(filePath, rotateClockwise)
+            view.autoScales = true
         },
     )
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun loadPreviewDocument(
+    filePath: String,
+    rotateClockwise: Boolean,
+): PDFDocument {
+    return PDFDocument(NSURL.fileURLWithPath(filePath)).also { document ->
+        if (rotateClockwise) {
+            document.pageAtIndex(0u)?.rotation = 90
+        }
+    }
 }

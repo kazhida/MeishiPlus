@@ -4,10 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.entities.CardEntity
-import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
-import com.abplus.meishiplus.data.repositories.UserRepository
+import com.abplus.meishiplus.data.usecase.UserInit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +22,7 @@ data class UserUiState(
 )
 
 class UserViewModel(
-    private val userRepository: UserRepository,
+    private val userInit: UserInit,
     private val cardRepository: CardRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UserUiState())
@@ -46,7 +45,7 @@ class UserViewModel(
                 errorMessage = null,
             )
         }
-        loadAppUser(authUser.uid)
+        loadAppUser(authUser)
     }
 
     fun signIn(
@@ -74,7 +73,7 @@ class UserViewModel(
                         errorMessage = null,
                     )
                 }
-                loadAppUser(authUser.uid)
+                loadAppUser(authUser)
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(
@@ -119,7 +118,7 @@ class UserViewModel(
     }
 
     fun updateCardAndReloadUser(card: CardEntity) {
-        val uid = _uiState.value.authUser?.uid ?: return
+        val authUser = _uiState.value.authUser ?: return
 
         viewModelScope.launch {
             _uiState.update {
@@ -131,7 +130,7 @@ class UserViewModel(
 
             runCatching {
                 cardRepository.updateCard(card)
-                initializeUser(uid)
+                userInit(authUser)
             }.onSuccess { appUser ->
                 _uiState.update {
                     it.copy(
@@ -151,10 +150,10 @@ class UserViewModel(
         }
     }
 
-    private fun loadAppUser(uid: String) {
+    private fun loadAppUser(authUser: AuthUser) {
         viewModelScope.launch {
             runCatching {
-                initializeUser(uid)
+                userInit(authUser)
             }.onSuccess { appUser ->
                 _uiState.update {
                     it.copy(
@@ -171,20 +170,5 @@ class UserViewModel(
                 }
             }
         }
-    }
-
-    private suspend fun initializeUser(uid: String): AppUser {
-        val userEntity = runCatching {
-            userRepository.getUser(uid)
-        }.getOrElse {
-            userRepository.addUser(UserEntity(id = uid))
-        }
-
-        val cards = if (userEntity.cardIds.isEmpty()) {
-            emptyList()
-        } else {
-            cardRepository.getCards(userEntity.cardIds)
-        }
-        return AppUser(user = userEntity, cards = cards)
     }
 }

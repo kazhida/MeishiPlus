@@ -17,3 +17,5 @@ expect suspend fun createA4CardPdf(
     leftMarginMm: Float,
     rightMarginMm: Float,
 ): CardPdfExportResult
+
+expect fun deletePdfFileQuietly(filePath: String)

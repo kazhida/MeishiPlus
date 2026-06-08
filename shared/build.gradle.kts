@@ -39,12 +39,20 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
             implementation(libs.compose.uiToolingPreview)
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.firestore)
             implementation(libs.kotlinx.coroutines.play.services)
             implementation(libs.ktor.client.android)
+        }
+        getByName("androidHostTest").dependencies {
+            implementation(libs.androidx.compose.ui.test.junit4)
+            implementation(libs.androidx.compose.ui.test.manifest)
+            implementation(libs.androidx.testExt.junit)
+            implementation(libs.junit)
+            implementation(libs.robolectric)
         }
         commonMain.dependencies {
             implementation(libs.coil.compose)
@@ -60,6 +68,8 @@ kotlin {
             implementation(libs.androidx.navigation.compose)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kscan)
+            implementation(libs.qrose)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -69,6 +79,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

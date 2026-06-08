@@ -5,29 +5,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -35,33 +26,30 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.abplus.meishiplus.data.entities.CardEntity
-import meishiplus.shared.generated.resources.Res
-import meishiplus.shared.generated.resources.ic_edit
-import meishiplus.shared.generated.resources.ic_layout
-import meishiplus.shared.generated.resources.ic_print
-import org.jetbrains.compose.resources.painterResource
+import com.abplus.meishiplus.resources.BusinessCardBackgroundOverlayMaxAlpha
+import com.abplus.meishiplus.resources.resolveBusinessCardBackgroundUri
 
 @Composable
 fun CardItem(
     cardEntity: CardEntity,
     modifier: Modifier = Modifier,
-    onEditClick: () -> Unit = {},
-    onLayoutClick: () -> Unit = {},
-    onPrintClick: () -> Unit = {},
+    fontScale: Float = 1f,
     onCardClick: () -> Unit = {},
     isLayoutLocked: Boolean = true,
     onCardChange: (CardEntity) -> Unit = {},
     onLayoutChangeFinished: () -> Unit = {},
 ) {
+    LaunchedEffect(cardEntity.bgAlpha, cardEntity.bgFile) {
+        println("CardItem bgAlpha=${cardEntity.bgAlpha}, bgFile=${cardEntity.bgFile}")
+    }
+
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(91f / 55f)
-            .widthIn(max = 460.dp)
             .clickable(
                 enabled = isLayoutLocked,
                 onClick = onCardClick,
@@ -75,19 +63,25 @@ fun CardItem(
         Box(modifier = Modifier.fillMaxSize()) {
             if (cardEntity.bgFile.isNotBlank()) {
                 AsyncImage(
-                    model = cardEntity.bgFile,
+                    model = resolveBusinessCardBackgroundUri(cardEntity.bgFile),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            Box(Modifier.fillMaxSize().alpha(cardEntity.bgAlpha).background(Color.White))
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .alpha(cardEntity.bgAlpha.coerceIn(0f, BusinessCardBackgroundOverlayMaxAlpha))
+                    .background(Color.White),
+            )
 
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 CardText(
                     element = cardEntity.organization,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveOrganization(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -96,6 +90,7 @@ fun CardItem(
                     element = cardEntity.title,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveTitle(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -104,6 +99,7 @@ fun CardItem(
                     element = cardEntity.name,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveName(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -112,6 +108,7 @@ fun CardItem(
                     label = "TEL",
                     element = cardEntity.phone,
                     isVisible = cardEntity.phone.value.isNotBlank(),
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.movePhone(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -119,6 +116,7 @@ fun CardItem(
                 CardText(
                     element = cardEntity.phone,
                     style = MaterialTheme.typography.bodySmall,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.movePhone(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -127,6 +125,7 @@ fun CardItem(
                     label = "MAIL",
                     element = cardEntity.email,
                     isVisible = cardEntity.email.value.isNotBlank(),
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveEmail(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -134,6 +133,7 @@ fun CardItem(
                 CardText(
                     element = cardEntity.email,
                     style = MaterialTheme.typography.bodySmall,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveEmail(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -142,6 +142,7 @@ fun CardItem(
                     label = "ADDR",
                     element = cardEntity.address1,
                     isVisible = cardEntity.address1.value.isNotBlank() || cardEntity.address2.value.isNotBlank(),
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveAddress(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -154,62 +155,16 @@ fun CardItem(
                         cardEntity.address2.value,
                     ).filter { it.isNotBlank() }.joinToString("\n"),
                     maxLines = 2,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveAddress(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
                 )
             }
-
-            if (isLayoutLocked) Column(modifier = Modifier.align(Alignment.TopEnd)) {
-                IconButton(
-                    onClick = onEditClick,
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.25f)),
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_edit),
-                        contentDescription = "編集",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-                IconButton(
-                    onClick = onLayoutClick,
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.25f)),
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_layout),
-                        contentDescription = "レイアウト",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-                IconButton(
-                    onClick = onPrintClick,
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.25f)),
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_print),
-                        contentDescription = "印刷",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
         }
     }
 }
+
 
 @Composable
 private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.CardText(
@@ -219,6 +174,7 @@ private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.CardText(
     fontWeight: FontWeight? = null,
     text: String = element.value,
     maxLines: Int = 1,
+    fontScale: Float = 1f,
     isLayoutLocked: Boolean = true,
     onDrag: (Float, Float) -> Unit = { _, _ -> },
     onDragFinished: () -> Unit = {},
@@ -229,7 +185,7 @@ private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.CardText(
 
     Text(
         text = text,
-        style = style.copy(fontSize = element.fontSize.sp),
+        style = style.copy(fontSize = (element.fontSize * fontScale).sp),
         color = color,
         fontWeight = fontWeight,
         maxLines = maxLines,
@@ -255,6 +211,7 @@ private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.ContactLa
     label: String,
     element: CardEntity.CardElement,
     isVisible: Boolean,
+    fontScale: Float = 1f,
     isLayoutLocked: Boolean = true,
     onDrag: (Float, Float) -> Unit = { _, _ -> },
     onDragFinished: () -> Unit = {},
@@ -266,7 +223,7 @@ private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.ContactLa
 
     Text(
         text = label,
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.labelSmall.scaledFontSize(fontScale),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         modifier = Modifier
@@ -309,6 +266,15 @@ private fun Modifier.draggableCardElement(
                 )
             },
         )
+    }
+}
+
+private fun TextStyle.scaledFontSize(fontScale: Float): TextStyle {
+    val currentFontSize = fontSize
+    return if (currentFontSize == TextUnit.Unspecified) {
+        this
+    } else {
+        copy(fontSize = currentFontSize * fontScale)
     }
 }
 

@@ -4,8 +4,6 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.hiltAndroid)
-    alias(libs.plugins.ksp)
 }
 
 if (file("google-services.json").exists()) {
@@ -30,9 +28,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
-    implementation(libs.hilt.android)
     implementation(libs.kotlinx.coroutines.play.services)
-    ksp(libs.hilt.compiler)
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)

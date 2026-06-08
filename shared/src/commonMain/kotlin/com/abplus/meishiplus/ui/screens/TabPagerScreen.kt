@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -27,12 +28,14 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.model.AppUser
+import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.ui.components.CardItem
 import com.abplus.meishiplus.ui.components.ProfileHeader
 import kotlinx.coroutines.launch
@@ -71,11 +75,13 @@ fun TabPagerScreen(
     appUser: AppUser? = null,
     errorMessage: String? = null,
     onSignOut: (() -> Unit)? = null,
+    cardRepository: CardRepository? = null,
     onEditCard: (Int) -> Unit = {},
     onLayoutCard: (Int) -> Unit = {},
     onPrintCard: (Int) -> Unit = {},
     onExchangeCard: (Int) -> Unit = {},
     onPreviewCard: (Int) -> Unit = {},
+    onPreviewPartnerCard: (CardEntity) -> Unit = {},
 ) {
     val cards = appUser?.cards.orEmpty()
     val tabs = if (cards.isNotEmpty()) {
@@ -212,7 +218,10 @@ fun TabPagerScreen(
                                     title = tabs[page],
                                     cardIndex = page,
                                     cardEntity = cards.getOrNull(page),
+                                    cards = cards,
+                                    cardRepository = cardRepository,
                                     onPreviewCard = onPreviewCard,
+                                    onPreviewPartnerCard = onPreviewPartnerCard,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                                 Box(
@@ -222,12 +231,12 @@ fun TabPagerScreen(
                                 ) {
                                     CardItemActionMenu(
                                         onMenuClick = {},
-                                onEditClick = { onEditCard(page) },
-                                onLayoutClick = { onLayoutCard(page) },
-                                onPrintClick = { onPrintCard(page) },
-                                onSwapClick = { onExchangeCard(page) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
+                                        onEditClick = { onEditCard(page) },
+                                        onLayoutClick = { onLayoutCard(page) },
+                                        onPrintClick = { onPrintCard(page) },
+                                        onSwapClick = { onExchangeCard(page) },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
                                             .widthIn(max = 460.dp)
                                             .wrapContentSize(Alignment.TopEnd),
                                     )
@@ -251,13 +260,37 @@ private fun TabPage(
     title: String,
     cardIndex: Int,
     cardEntity: CardEntity?,
+    cards: List<CardEntity>,
+    cardRepository: CardRepository?,
     onPreviewCard: (Int) -> Unit,
+    onPreviewPartnerCard: (CardEntity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val card = cardEntity ?: CardEntity.default().copy(
         id = title.hashCode().toString(),
         name = CardEntity.default().name.copy(value = title),
     )
+    var partnerCards by remember(card.id, card.partnerIds, cardRepository) {
+        mutableStateOf<List<Pair<String, CardEntity?>>>(emptyList())
+    }
+    var isPartnerCardsLoading by remember(card.id, card.partnerIds, cardRepository) {
+        mutableStateOf(card.partnerIds.isNotEmpty() && cardRepository != null)
+    }
+    LaunchedEffect(card.id, card.partnerIds, cardRepository) {
+        val repository = cardRepository
+        if (repository == null || card.partnerIds.isEmpty()) {
+            partnerCards = emptyList()
+            isPartnerCardsLoading = false
+        } else {
+            isPartnerCardsLoading = true
+            partnerCards = card.partnerIds.map { partnerId ->
+                partnerId to runCatching {
+                    repository.getCard(partnerId)
+                }.getOrNull()
+            }
+            isPartnerCardsLoading = false
+        }
+    }
 
     Column(
         modifier = modifier
@@ -275,6 +308,129 @@ private fun TabPage(
                 cardEntity = card,
                 modifier = Modifier.fillMaxSize(),
                 onCardClick = { onPreviewCard(cardIndex) },
+            )
+        }
+        when {
+            isPartnerCardsLoading -> {
+                PartnerCardsLoadingSection(
+                    partnerCount = card.partnerIds.size,
+                )
+            }
+            partnerCards.isNotEmpty() -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    partnerCards.chunked(2).forEach { rowCards ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            rowCards.forEach { (_, partnerCard) ->
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .aspectRatio(91f / 55f),
+                                ) {
+                                    if (partnerCard != null) {
+                                        CardItem(
+                                            cardEntity = partnerCard,
+                                            modifier = Modifier.fillMaxSize(),
+                                            fontScale = 0.5f,
+                                            onCardClick = {
+                                                onPreviewPartnerCard(partnerCard)
+                                            },
+                                        )
+                                    } else {
+                                        PartnerCardPlaceholder(
+                                            text = "未共有",
+                                        )
+                                    }
+                                }
+                            }
+                            if (rowCards.size == 1) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .aspectRatio(91f / 55f),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            card.partnerIds.isNotEmpty() -> {
+                PartnerCardsLoadingSection(
+                    partnerCount = card.partnerIds.size,
+                    message = "未共有",
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PartnerCardsLoadingSection(
+    partnerCount: Int,
+    message: String = "読み込み中",
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        repeat((partnerCount + 1) / 2) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                repeat(2) { columnIndex ->
+                    if (it * 2 + columnIndex < partnerCount) {
+                        PartnerCardPlaceholder(
+                            text = message,
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(91f / 55f),
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(91f / 55f),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PartnerCardPlaceholder(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White.copy(alpha = 0.72f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(22.dp),
+                strokeWidth = 2.dp,
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

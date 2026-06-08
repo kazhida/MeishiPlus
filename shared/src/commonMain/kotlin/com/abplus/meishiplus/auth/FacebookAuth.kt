@@ -16,6 +16,7 @@ import kotlinx.serialization.json.Json
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.facebook_client_id
 import meishiplus.shared.generated.resources.facebook_client_secret
+import meishiplus.shared.generated.resources.redirect_server
 import org.jetbrains.compose.resources.getString
 
 object FacebookAuth {
@@ -124,6 +125,9 @@ object FacebookAuth {
 
     private suspend fun defaultClientSecret(): String =
         getString(Res.string.facebook_client_secret)
+
+    private suspend fun defaultRedirectUri(): String =
+        "${getString(Res.string.redirect_server)}/facebook"
 
     @Serializable
     private data class AccessTokenResponse(

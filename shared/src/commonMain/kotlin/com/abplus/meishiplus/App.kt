@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.entities.CardEntity
+import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
@@ -29,6 +30,7 @@ import com.abplus.meishiplus.ui.screens.CardExchangeScreen
 import com.abplus.meishiplus.ui.screens.CardLayoutScreen
 import com.abplus.meishiplus.ui.screens.CardPreviewScreen
 import com.abplus.meishiplus.ui.screens.CardPrintScreen
+import com.abplus.meishiplus.ui.screens.SnsAuthScreen
 import com.abplus.meishiplus.ui.screens.TabPagerScreen
 import com.abplus.meishiplus.viewmodel.UserUiState
 import com.abplus.meishiplus.viewmodel.UserViewModel
@@ -70,146 +72,132 @@ fun App(
     var previewPartnerCard by remember { androidx.compose.runtime.mutableStateOf<CardEntity?>(null) }
 
     MaterialTheme {
-        Box(modifier = Modifier.fillMaxSize()) {
-            NavHost(
-                navController = navController,
-                startDestination = HomeRoute,
-            ) {
-                composable<HomeRoute> {
-                    TabPagerScreen(
-                        authUser = authUser,
-                        appUser = effectiveAppUser,
-                        errorMessage = effectiveErrorMessage,
-                        onSignOut = onSignOut,
-                        cardRepository = cardRepository,
-                        onEditCard = { cardIndex ->
-                            navController.navigate(CardEntryRoute(cardIndex))
-                        },
-                        onLayoutCard = { cardIndex ->
-                            navController.navigate(CardLayoutRoute(cardIndex))
-                        },
-                        onPrintCard = { cardIndex ->
-                            navController.navigate(CardPrintRoute(cardIndex))
-                        },
-                        onExchangeCard = { cardIndex ->
-                            navController.navigate(CardExchangeRoute(cardIndex))
-                        },
-                        onPreviewCard = { cardIndex ->
-                            navController.navigate(CardPreviewRoute(cardIndex))
-                        },
-                        onPreviewPartnerCard = { partnerCard ->
-                            previewPartnerCard = partnerCard
-                        },
-                    )
-                }
-                composable<CardEntryRoute> { backStackEntry ->
-                    val cardIndex = backStackEntry.toRoute<CardEntryRoute>().cardIndex
-                    val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
-                        id = cardIndex.toString(),
-                        name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
-                    )
-                    val latestCard by rememberUpdatedState(card)
-                    DisposableEffect(cardIndex, effectiveUserViewModel) {
-                        onDispose {
-                            effectiveUserViewModel?.updateCardAndReloadUser(latestCard)
+        NavHost(
+            navController = navController,
+            startDestination = HomeRoute,
+        ) {
+            composable<HomeRoute> {
+                TabPagerScreen(
+                    authUser = authUser,
+                    appUser = effectiveAppUser,
+                    errorMessage = effectiveErrorMessage,
+                    onSignOut = onSignOut,
+                    onEditCard = { cardIndex ->
+                        navController.navigate(CardEntryRoute(cardIndex))
+                    },
+                    onLayoutCard = { cardIndex ->
+                        navController.navigate(CardLayoutRoute(cardIndex))
+                    },
+                    onPrintCard = { cardIndex ->
+                        navController.navigate(CardPrintRoute(cardIndex))
+                    },
+                    onExchangeCard = { cardIndex ->
+                        navController.navigate(CardExchangeRoute(cardIndex))
+                    },
+                    onPreviewCard = { cardIndex ->
+                        navController.navigate(CardPreviewRoute(cardIndex))
+                    },
+                    onSnsAuthClick = {
+                        navController.navigate(SnsAuthRoute) {
+                            launchSingleTop = true
                         }
-                    }
-                    CardEntryScreen(
-                        cardEntity = card,
-                        onCardChange = { updatedCard ->
-                            effectiveUserViewModel?.updateCard(cardIndex, updatedCard)
-                        },
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
-                    )
-                }
-                composable<CardLayoutRoute> { backStackEntry ->
-                    val cardIndex = backStackEntry.toRoute<CardLayoutRoute>().cardIndex
-                    val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
-                        id = cardIndex.toString(),
-                        name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
-                    )
-                    val latestCard by rememberUpdatedState(card)
-                    DisposableEffect(cardIndex, effectiveUserViewModel) {
-                        onDispose {
-                            effectiveUserViewModel?.updateCardAndReloadUser(latestCard)
-                        }
-                    }
-                    CardLayoutScreen(
-                        cardEntity = card,
-                        onCardChange = { updatedCard ->
-                            effectiveUserViewModel?.updateCard(cardIndex, updatedCard)
-                        },
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
-                    )
-                }
-                composable<CardPrintRoute> { backStackEntry ->
-                    val cardIndex = backStackEntry.toRoute<CardPrintRoute>().cardIndex
-                    val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
-                        id = cardIndex.toString(),
-                        name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
-                    )
-                    val latestCard by rememberUpdatedState(card)
-                    DisposableEffect(cardIndex, effectiveUserViewModel) {
-                        onDispose {
-                            effectiveUserViewModel?.updateCardAndReloadUser(latestCard)
-                        }
-                    }
-                    CardPrintScreen(
-                        cardEntity = card,
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
-                    )
-                }
-                composable<CardPreviewRoute> { backStackEntry ->
-                    val cardIndex = backStackEntry.toRoute<CardPreviewRoute>().cardIndex
-                    val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
-                        id = cardIndex.toString(),
-                        name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
-                    )
-                    CardPreviewScreen(
-                        cardEntity = card,
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
-                    )
-                }
-                composable<CardExchangeRoute> { backStackEntry ->
-                    val cardIndex = backStackEntry.toRoute<CardExchangeRoute>().cardIndex
-                    val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
-                        id = cardIndex.toString(),
-                        name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
-                    )
-                    CardExchangeScreen(
-                        cardEntity = card,
-                        onBackClick = {
-                            navController.popBackStack()
-                        },
-                        onCardScanned = { scannedCardId ->
-                            val currentAuthUser = authUser
-                            val repository = cardRepository
-                            if (currentAuthUser != null && repository != null) {
-                                exchangeCard(
-                                    cardRepository = repository,
-                                    currentUid = currentAuthUser.uid,
-                                    currentCardId = card.id,
-                                    partnerCardId = scannedCardId,
-                                )
-                            }
-                        },
-                    )
-                }
+                    },
+                )
             }
-
-            previewPartnerCard?.let { card ->
+            composable<SnsAuthRoute> {
+                SnsAuthScreen(
+                    userEntity = effectiveAppUser?.user ?: UserEntity(),
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                )
+            }
+            composable<CardEntryRoute> { backStackEntry ->
+                val cardIndex = backStackEntry.toRoute<CardEntryRoute>().cardIndex
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
+                    id = cardIndex.toString(),
+                    name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
+                )
+                val latestCard by rememberUpdatedState(card)
+                DisposableEffect(cardIndex, effectiveUserViewModel) {
+                    onDispose {
+                        effectiveUserViewModel?.updateCardAndReloadUser(latestCard)
+                    }
+                }
+                CardEntryScreen(
+                    cardEntity = card,
+                    onCardChange = { updatedCard ->
+                        effectiveUserViewModel?.updateCard(cardIndex, updatedCard)
+                    },
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                )
+            }
+            composable<CardLayoutRoute> { backStackEntry ->
+                val cardIndex = backStackEntry.toRoute<CardLayoutRoute>().cardIndex
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
+                    id = cardIndex.toString(),
+                    name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
+                )
+                val latestCard by rememberUpdatedState(card)
+                DisposableEffect(cardIndex, effectiveUserViewModel) {
+                    onDispose {
+                        effectiveUserViewModel?.updateCardAndReloadUser(latestCard)
+                    }
+                }
+                CardLayoutScreen(
+                    cardEntity = card,
+                    onCardChange = { updatedCard ->
+                        effectiveUserViewModel?.updateCard(cardIndex, updatedCard)
+                    },
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                )
+            }
+            composable<CardPrintRoute> { backStackEntry ->
+                val cardIndex = backStackEntry.toRoute<CardPrintRoute>().cardIndex
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
+                    id = cardIndex.toString(),
+                    name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
+                )
+                val latestCard by rememberUpdatedState(card)
+                DisposableEffect(cardIndex, effectiveUserViewModel) {
+                    onDispose {
+                        effectiveUserViewModel?.updateCardAndReloadUser(latestCard)
+                    }
+                }
+                CardPrintScreen(
+                    cardEntity = card,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                )
+            }
+            composable<CardPreviewRoute> { backStackEntry ->
+                val cardIndex = backStackEntry.toRoute<CardPreviewRoute>().cardIndex
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
+                    id = cardIndex.toString(),
+                    name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
+                )
                 CardPreviewScreen(
                     cardEntity = card,
                     onBackClick = {
-                        previewPartnerCard = null
+                        navController.popBackStack()
+                    },
+                )
+            }
+            composable<CardExchangeRoute> { backStackEntry ->
+                val cardIndex = backStackEntry.toRoute<CardExchangeRoute>().cardIndex
+                val card = effectiveAppUser?.cards?.getOrNull(cardIndex) ?: CardEntity.default().copy(
+                    id = cardIndex.toString(),
+                    name = CardEntity.default().name.copy(value = "名刺${cardIndex + 1}"),
+                )
+                CardExchangeScreen(
+                    cardEntity = card,
+                    onBackClick = {
+                        navController.popBackStack()
                     },
                 )
             }
@@ -219,6 +207,9 @@ fun App(
 
 @Serializable
 private data object HomeRoute
+
+@Serializable
+private data object SnsAuthRoute
 
 @Serializable
 private data class CardEntryRoute(val cardIndex: Int)

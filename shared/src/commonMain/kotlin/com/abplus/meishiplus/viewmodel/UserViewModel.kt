@@ -3,7 +3,13 @@ package com.abplus.meishiplus.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abplus.meishiplus.auth.AuthUser
+import com.abplus.meishiplus.auth.FacebookAuth
+import com.abplus.meishiplus.auth.GithubAuth
+import com.abplus.meishiplus.auth.InstagramAuth
+import com.abplus.meishiplus.auth.QiitaAuth
 import com.abplus.meishiplus.data.entities.CardEntity
+import com.abplus.meishiplus.data.entities.UserEntity
+import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.usecase.UserInit
@@ -42,6 +48,7 @@ class UserViewModel(
                 authUser = authUser,
                 appUser = null,
                 isAuthResolved = true,
+                isLoading = true,
                 errorMessage = null,
             )
         }
@@ -152,12 +159,20 @@ class UserViewModel(
 
     private fun loadAppUser(authUser: AuthUser) {
         viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                )
+            }
+
             runCatching {
                 userInit(authUser)
             }.onSuccess { appUser ->
                 _uiState.update {
                     it.copy(
                         appUser = appUser,
+                        isLoading = false,
                         errorMessage = null,
                     )
                 }
@@ -165,10 +180,31 @@ class UserViewModel(
                 _uiState.update {
                     it.copy(
                         appUser = null,
+                        isLoading = false,
                         errorMessage = throwable.message ?: "ユーザー情報を取得できませんでした。",
                     )
                 }
             }
         }
+    }
+
+    private suspend fun initializeUser(uid: String): AppUser {
+        val userEntity = runCatching {
+            userRepository.getUser(uid)
+        }.getOrElse {
+            userRepository.addUser(UserEntity(id = uid))
+        }
+
+        val cards = if (userEntity.cardIds.isEmpty()) {
+            emptyList()
+        } else {
+            cardRepository.getCards(userEntity.cardIds)
+        }
+        return AppUser(user = userEntity, cards = cards)
+    }
+
+    private fun List<Account>.upsertAccount(account: Account): List<Account> {
+        val accountService = account.service.lowercase()
+        return filterNot { it.service.lowercase() == accountService } + account
     }
 }

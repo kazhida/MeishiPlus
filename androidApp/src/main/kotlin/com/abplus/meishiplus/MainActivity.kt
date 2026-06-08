@@ -1,6 +1,8 @@
 package com.abplus.meishiplus
 
+import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,11 +30,14 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private val deepLinkUri = MutableStateFlow<Uri?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         AndroidCardPdfContext.applicationContext = applicationContext
+        handleIntent(intent)
 
         setContent {
             AndroidAuthGate(
@@ -41,6 +46,16 @@ class MainActivity : ComponentActivity() {
                 cardRepository = cardRepository,
             )
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        deepLinkUri.value = intent?.data
     }
 }
 

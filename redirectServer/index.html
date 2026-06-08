@@ -1,0 +1,39 @@
+<!doctype html>
+<html class="no-js" lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>名刺+ 認証リダイレクト</title>
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="description" content="名刺+ の外部サービス認証をアプリに戻すためのリダイレクトページです。">
+
+  <meta property="og:title" content="名刺+ 認証リダイレクト">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="/">
+  <meta property="og:image" content="/icon.png">
+  <meta property="og:image:alt" content="名刺+">
+
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.png">
+
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#fafafa">
+</head>
+
+<body>
+  <main class="redirect-page" aria-live="polite">
+    <section class="redirect-panel">
+      <img class="app-icon" src="icon.png" width="72" height="72" alt="">
+      <h1>認証を完了しています</h1>
+      <p id="status-message">名刺+ アプリに戻ります。</p>
+      <a id="open-app-link" class="primary-action" href="#" hidden>アプリを開く</a>
+      <p id="detail-message" class="detail-message"></p>
+    </section>
+  </main>
+  <script src="js/app.js"></script>
+
+</body>
+
+</html>

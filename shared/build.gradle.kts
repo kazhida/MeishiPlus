@@ -44,8 +44,10 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.firestore)
+            implementation(libs.google.play.services.auth)
             implementation(libs.kotlinx.coroutines.play.services)
             implementation(libs.ktor.client.android)
+            implementation(libs.slf4j.api)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.androidx.compose.ui.test.junit4)
@@ -66,9 +68,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.androidx.navigation.compose)
-            implementation("io.ktor:ktor-client-core:${libs.versions.ktor.get()}")
-            implementation("io.ktor:ktor-client-content-negotiation:${libs.versions.ktor.get()}")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:${libs.versions.ktor.get()}")
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kscan)

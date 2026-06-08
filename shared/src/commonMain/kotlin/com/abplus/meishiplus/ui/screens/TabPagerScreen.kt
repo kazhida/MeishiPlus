@@ -82,6 +82,7 @@ fun TabPagerScreen(
     onExchangeCard: (Int) -> Unit = {},
     onPreviewCard: (Int) -> Unit = {},
     onPreviewPartnerCard: (CardEntity) -> Unit = {},
+    onSnsAuthClick: () -> Unit = {},
 ) {
     val cards = appUser?.cards.orEmpty()
     val tabs = if (cards.isNotEmpty()) {
@@ -90,9 +91,9 @@ fun TabPagerScreen(
         listOf("------")
     }
     val drawerItems = listOf(
-        DrawerItem("ホーム", Res.drawable.ic_home),
-        DrawerItem("名刺", Res.drawable.ic_badge),
-        DrawerItem("設定", Res.drawable.ic_settings),
+        DrawerItem("ホーム", Res.drawable.ic_home, DrawerDestination.Home),
+        DrawerItem("SNS認証", Res.drawable.ic_badge, DrawerDestination.SnsAuth),
+        DrawerItem("設定", Res.drawable.ic_settings, DrawerDestination.Settings),
     )
     val pagerState = rememberPagerState(
         initialPage = 0,
@@ -117,10 +118,16 @@ fun TabPagerScreen(
                             )
                         },
                         label = { Text(item.title) },
-                        selected = index == 0,
+                        selected = item.destination == DrawerDestination.Home,
                         onClick = {
-                            coroutineScope.launch {
-                                drawerState.close()
+                            when (item.destination) {
+                                DrawerDestination.SnsAuth -> onSnsAuthClick()
+                                DrawerDestination.Home,
+                                DrawerDestination.Settings -> {
+                                    coroutineScope.launch {
+                                        drawerState.close()
+                                    }
+                                }
                             }
                         },
                         modifier = Modifier.padding(horizontal = 12.dp),
@@ -253,7 +260,14 @@ fun TabPagerScreen(
 private data class DrawerItem(
     val title: String,
     val icon: DrawableResource,
+    val destination: DrawerDestination,
 )
+
+private enum class DrawerDestination {
+    Home,
+    SnsAuth,
+    Settings,
+}
 
 @Composable
 private fun TabPage(

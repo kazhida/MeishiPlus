@@ -63,16 +63,22 @@ fun SnsAuthScreen(
         SnsAccountItemSpec(
             serviceName = "GitHub",
             icon = Res.drawable.ic_sns_github,
-            account = null,
+            account = userEntity.accounts.firstOrNull { it is Account.Github || it.service == "github" },
+        ),
+        SnsAccountItemSpec(
+            serviceName = "Qiita",
+            icon = Res.drawable.ic_sns_qiita,
+            account = userEntity.accounts.firstOrNull { it is Account.Qiita || it.service == "qiita" },
         ),
         SnsAccountItemSpec(
             serviceName = "Facebook",
             icon = Res.drawable.ic_sns_facebook,
-            account = null,
+            account = userEntity.accounts.firstOrNull { it is Account.Facebook || it.service == "facebook" },
         ),
         SnsAccountItemSpec(
             serviceName = "Instagram",
             icon = Res.drawable.ic_sns_instagram,
+            account = userEntity.accounts.firstOrNull { it is Account.Instagram || it.service == "instagram" },
             account = null,
         ),
         SnsAccountItemSpec(
@@ -131,7 +137,9 @@ fun SnsAuthScreen(
                         "Facebook" -> {
                             {
                                 coroutineScope.launch {
-                                    uriHandler.openUri(FacebookAuth.authorizationUrl())
+                                    val url = FacebookAuth.authorizationUrl()
+                                    println("DEBUG Facebook authorizationUrl: $url")
+                                    uriHandler.openUri(url)
                                 }
                             }
                         }

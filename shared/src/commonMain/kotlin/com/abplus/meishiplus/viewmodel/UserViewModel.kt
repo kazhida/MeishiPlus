@@ -76,7 +76,7 @@ class UserViewModel(
                     it.copy(
                         authUser = authUser,
                         isAuthResolved = true,
-                        isLoading = false,
+                        isLoading = true,
                         errorMessage = null,
                     )
                 }
@@ -157,6 +157,44 @@ class UserViewModel(
         }
     }
 
+    fun reloadCurrentUser() {
+        val authUser = _uiState.value.authUser ?: return
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                )
+            }
+
+            runCatching {
+                userInit(authUser)
+            }.onSuccess { appUser ->
+                _uiState.update {
+                    it.copy(
+                        appUser = appUser,
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = throwable.message ?: "ユーザー情報を再取得できませんでした。",
+                    )
+                }
+            }
+        }
+    }
+
+    fun setErrorMessage(message: String?) {
+        _uiState.update { state ->
+            state.copy(errorMessage = message)
+        }
+    }
+
     private fun loadAppUser(authUser: AuthUser) {
         viewModelScope.launch {
             _uiState.update {
@@ -186,21 +224,6 @@ class UserViewModel(
                 }
             }
         }
-    }
-
-    private suspend fun initializeUser(uid: String): AppUser {
-        val userEntity = runCatching {
-            userRepository.getUser(uid)
-        }.getOrElse {
-            userRepository.addUser(UserEntity(id = uid))
-        }
-
-        val cards = if (userEntity.cardIds.isEmpty()) {
-            emptyList()
-        } else {
-            cardRepository.getCards(userEntity.cardIds)
-        }
-        return AppUser(user = userEntity, cards = cards)
     }
 
     private fun List<Account>.upsertAccount(account: Account): List<Account> {

@@ -66,6 +66,11 @@ fun SnsAuthScreen(
             account = userEntity.accounts.firstOrNull { it is Account.Github || it.service == "github" },
         ),
         SnsAccountItemSpec(
+            serviceName = "X",
+            icon = Res.drawable.ic_sns_x,
+            account = userEntity.accounts.firstOrNull { it is Account.X || it.service == "x" },
+        ),
+        SnsAccountItemSpec(
             serviceName = "Qiita",
             icon = Res.drawable.ic_sns_qiita,
             account = userEntity.accounts.firstOrNull { it is Account.Qiita || it.service == "qiita" },
@@ -79,17 +84,6 @@ fun SnsAuthScreen(
             serviceName = "Instagram",
             icon = Res.drawable.ic_sns_instagram,
             account = userEntity.accounts.firstOrNull { it is Account.Instagram || it.service == "instagram" },
-            account = null,
-        ),
-        SnsAccountItemSpec(
-            serviceName = "X",
-            icon = Res.drawable.ic_sns_x,
-            account = null,
-        ),
-        SnsAccountItemSpec(
-            serviceName = "Qiita",
-            icon = Res.drawable.ic_sns_qiita,
-            account = null,
         ),
     )
 

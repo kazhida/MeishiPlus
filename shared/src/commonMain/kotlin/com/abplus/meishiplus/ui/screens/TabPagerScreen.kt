@@ -297,12 +297,15 @@ private fun TabPage(
             isPartnerCardsLoading = false
         } else {
             isPartnerCardsLoading = true
-            partnerCards = card.partnerIds.map { partnerId ->
-                partnerId to runCatching {
-                    repository.getCard(partnerId)
-                }.getOrNull()
+            try {
+                partnerCards = card.partnerIds.map { partnerId ->
+                    partnerId to runCatching {
+                        repository.getCard(partnerId)
+                    }.getOrNull()
+                }
+            } finally {
+                isPartnerCardsLoading = false
             }
-            isPartnerCardsLoading = false
         }
     }
 
@@ -360,6 +363,7 @@ private fun TabPage(
                                     } else {
                                         PartnerCardPlaceholder(
                                             text = "未共有",
+                                            showProgress = false,
                                         )
                                     }
                                 }
@@ -425,6 +429,7 @@ private fun PartnerCardsLoadingSection(
 @Composable
 private fun PartnerCardPlaceholder(
     text: String,
+    showProgress: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -437,10 +442,12 @@ private fun PartnerCardPlaceholder(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(22.dp),
-                strokeWidth = 2.dp,
-            )
+            if (showProgress) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    strokeWidth = 2.dp,
+                )
+            }
             Text(
                 text = text,
                 style = MaterialTheme.typography.titleMedium,

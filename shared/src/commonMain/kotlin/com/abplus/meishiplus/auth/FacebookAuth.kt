@@ -23,13 +23,14 @@ object FacebookAuth {
 
     suspend fun authorizationUrl(
         clientId: String? = null,
-        redirectUri: String = DEFAULT_REDIRECT_URI,
+        redirectUri: String? = null,
         scope: String = DEFAULT_SCOPE,
         state: String = "",
     ): String {
+        val resolvedRedirectUri = redirectUri ?: defaultRedirectUri()
         return URLBuilder("$FACEBOOK_WEB_BASE_URL/$GRAPH_API_VERSION/dialog/oauth").apply {
             parameters.append("client_id", clientId ?: defaultClientId())
-            parameters.append("redirect_uri", redirectUri)
+            parameters.append("redirect_uri", resolvedRedirectUri)
             parameters.append("scope", scope)
             parameters.append("response_type", "code")
             if (state.isNotBlank()) {
@@ -42,14 +43,15 @@ object FacebookAuth {
         code: String,
         clientId: String? = null,
         clientSecret: String? = null,
-        redirectUri: String = DEFAULT_REDIRECT_URI,
+        redirectUri: String? = null,
         httpClient: HttpClient = defaultHttpClient,
     ): Account.Facebook {
+        val resolvedRedirectUri = redirectUri ?: defaultRedirectUri()
         val accessToken = exchangeCodeForAccessToken(
             code = code,
             clientId = clientId,
             clientSecret = clientSecret,
-            redirectUri = redirectUri,
+            redirectUri = resolvedRedirectUri,
             httpClient = httpClient,
         )
         return getAuthenticatedAccount(
@@ -62,15 +64,16 @@ object FacebookAuth {
         code: String,
         clientId: String? = null,
         clientSecret: String? = null,
-        redirectUri: String = DEFAULT_REDIRECT_URI,
+        redirectUri: String? = null,
         httpClient: HttpClient = defaultHttpClient,
     ): String {
         require(code.isNotBlank()) { "code must not be blank." }
+        val resolvedRedirectUri = redirectUri ?: defaultRedirectUri()
 
         val url = URLBuilder("$GRAPH_API_BASE_URL/$GRAPH_API_VERSION/oauth/access_token").apply {
             parameters.append("client_id", clientId ?: defaultClientId())
             parameters.append("client_secret", clientSecret ?: defaultClientSecret())
-            parameters.append("redirect_uri", redirectUri)
+            parameters.append("redirect_uri", resolvedRedirectUri)
             parameters.append("code", code)
         }.buildString()
         val response = httpClient.get(url) {
@@ -126,8 +129,11 @@ object FacebookAuth {
     private suspend fun defaultClientSecret(): String =
         getString(Res.string.facebook_client_secret)
 
-    private suspend fun defaultRedirectUri(): String =
+    suspend fun redirectUri(): String =
         "${getString(Res.string.redirect_server)}/facebook"
+
+    private suspend fun defaultRedirectUri(): String =
+        redirectUri()
 
     @Serializable
     private data class AccessTokenResponse(

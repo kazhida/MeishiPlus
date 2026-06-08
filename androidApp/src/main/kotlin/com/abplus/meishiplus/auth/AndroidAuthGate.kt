@@ -21,7 +21,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -37,9 +39,18 @@ import androidx.credentials.exceptions.GetCredentialProviderConfigurationExcepti
 import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.exceptions.NoCredentialException
 import com.abplus.meishiplus.App
+import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
+import com.abplus.meishiplus.auth.resolveSnsAuthService
+import com.abplus.meishiplus.auth.snsAuthFailedMessage
+import com.abplus.meishiplus.auth.snsAuthInvalidRedirectMessage
+import com.abplus.meishiplus.auth.snsAuthMissingCodeMessage
+import com.abplus.meishiplus.auth.snsAuthReflectFailedMessage
+import com.abplus.meishiplus.auth.snsAuthUnsupportedServiceMessage
 import com.abplus.meishiplus.viewmodel.UserViewModel
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -47,20 +58,21 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
 
 @Composable
 fun AndroidAuthGate(
     userViewModel: UserViewModel,
-    deepLinkUri: StateFlow<Uri?>? = null,
-    onDeepLinkConsumed: () -> Unit = {},
+    userRepository: UserRepository,
+    cardRepository: CardRepository,
+    deepLinkUri: MutableStateFlow<Uri?>,
 ) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val credentialManager = remember { CredentialManager.create(context) }
     val uiState by userViewModel.uiState.collectAsState()
-    val currentDeepLinkUri by (deepLinkUri ?: remember { MutableStateFlow<Uri?>(null) }).collectAsState()
+    val pendingDeepLink by deepLinkUri.collectAsState()
+    var guestModeEnabled by remember { mutableStateOf(false) }
 
     DisposableEffect(auth, userViewModel) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -72,31 +84,93 @@ fun AndroidAuthGate(
         }
     }
 
-    LaunchedEffect(currentDeepLinkUri, uiState.appUser) {
-        if (uiState.appUser == null) return@LaunchedEffect
-
-        currentDeepLinkUri
-            ?.takeIf { it.scheme == "mspls" }
-            ?.let { uri ->
-                val code = uri.getQueryParameter("code")?.takeIf { it.isNotBlank() } ?: return@let
-                when (uri.host) {
-                    "facebook" -> userViewModel.authenticateFacebookAndSaveAccount(code)
-                    "github" -> userViewModel.authenticateGithubAndSaveAccount(code)
-                    "instagram" -> userViewModel.authenticateInstagramAndSaveAccount(code)
-                    "qiita" -> userViewModel.authenticateQiitaAndSaveAccount(code)
-                    else -> return@let
-                }
-                onDeepLinkConsumed()
+    LaunchedEffect(pendingDeepLink, uiState.authUser?.uid, uiState.isLoading) {
+        val uri = pendingDeepLink ?: return@LaunchedEffect
+        val authUser = uiState.authUser ?: return@LaunchedEffect
+        when (
+            val outcome = SnsAuthRedirect(
+                service = resolveSnsAuthService(uri.host, uri.pathSegments),
+                code = uri.getQueryParameter("code"),
+                error = uri.getQueryParameter("error"),
+                errorDescription = uri.getQueryParameter("error_description")
+                    ?: uri.getQueryParameter("error_reason"),
+            ).resolve()
+        ) {
+            SnsAuthRedirectOutcome.MissingService -> {
+                userViewModel.setErrorMessage(snsAuthInvalidRedirectMessage())
+                deepLinkUri.value = null
+                return@LaunchedEffect
             }
+            SnsAuthRedirectOutcome.MissingCode -> {
+                userViewModel.setErrorMessage(snsAuthMissingCodeMessage())
+                deepLinkUri.value = null
+                return@LaunchedEffect
+            }
+            is SnsAuthRedirectOutcome.Failure -> {
+                userViewModel.setErrorMessage(snsAuthFailedMessage(outcome.error, outcome.description))
+                deepLinkUri.value = null
+                return@LaunchedEffect
+            }
+            is SnsAuthRedirectOutcome.Success -> {
+                if (uiState.isLoading) return@LaunchedEffect
+
+                userViewModel.setErrorMessage(null)
+                runCatching {
+                    val account = authenticateSnsAccount(
+                        service = outcome.service,
+                        code = outcome.code,
+                    )
+                    val currentUser = runCatching {
+                        userRepository.getUser(authUser.uid)
+                    }.getOrElse {
+                        UserEntity(id = authUser.uid)
+                    }
+                    val updatedUser = currentUser.copy(
+                        accounts = currentUser.accounts.upsertAccount(account),
+                    )
+                    userRepository.saveUser(updatedUser)
+                }.onSuccess {
+                    userViewModel.reloadCurrentUser()
+                    deepLinkUri.value = null
+                }.onFailure { throwable ->
+                    val errorMessage = if (
+                        throwable is IllegalStateException &&
+                        throwable.message?.startsWith("未対応のSNSサービスです") == true
+                    ) {
+                        snsAuthUnsupportedServiceMessage()
+                    } else {
+                        throwable.message ?: snsAuthReflectFailedMessage()
+                    }
+                    userViewModel.setErrorMessage(errorMessage)
+                    deepLinkUri.value = null
+                }
+            }
+        }
     }
 
     if (!uiState.isAuthResolved) {
-        AuthLoadingScreen()
-        return
+        if (!guestModeEnabled) {
+            AuthLoadingScreen()
+            return
+        }
     }
 
     if (uiState.authUser != null && uiState.appUser == null && uiState.isLoading) {
         AuthLoadingScreen()
+        return
+    }
+
+    if (guestModeEnabled) {
+        App(
+            authUser = null,
+            onSignOut = null,
+            appUser = null,
+            errorMessage = null,
+            userViewModel = userViewModel,
+            userRepository = userRepository,
+            cardRepository = cardRepository,
+            startOnSnsAuth = true,
+        )
         return
     }
 
@@ -133,6 +207,9 @@ fun AndroidAuthGate(
                 toErrorMessage = Throwable::userMessage,
             )
         },
+        onSkipGoogleSignIn = {
+            guestModeEnabled = true
+        },
     )
 }
 
@@ -155,6 +232,7 @@ private fun SignInScreen(
     isLoading: Boolean,
     errorMessage: String?,
     onSignIn: () -> Unit,
+    onSkipGoogleSignIn: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -190,6 +268,16 @@ private fun SignInScreen(
                     Text("Googleでログイン")
                 }
             }
+            Button(
+                onClick = onSkipGoogleSignIn,
+                enabled = !isLoading,
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+            ) {
+                Text("Googleログインをスキップ")
+            }
             errorMessage?.let { message ->
                 Text(
                     text = message,
@@ -208,6 +296,13 @@ private suspend fun signInWithGoogle(
     credentialManager: CredentialManager,
 ): FirebaseUser {
     val activity = context as? Activity ?: error("ログインにはActivityコンテキストが必要です。")
+    val googlePlayServicesResult = GoogleApiAvailability.getInstance()
+        .isGooglePlayServicesAvailable(context)
+    if (googlePlayServicesResult != ConnectionResult.SUCCESS) {
+        error(
+            "Google Play開発者サービスが利用できません。Play開発者サービスを更新するか、Google Play対応端末で再度お試しください。",
+        )
+    }
     val webClientId = context.defaultWebClientId()
 
     val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(
@@ -218,10 +313,17 @@ private suspend fun signInWithGoogle(
         .addCredentialOption(signInWithGoogleOption)
         .build()
 
-    val result = credentialManager.getCredential(
-        context = activity,
-        request = request,
-    )
+    val result = try {
+        credentialManager.getCredential(
+            context = activity,
+            request = request,
+        )
+    } catch (securityException: SecurityException) {
+        throw IllegalStateException(
+            "Googleログインの認証ブローカーにアクセスできませんでした。Google Play開発者サービスを更新し、端末のGoogleアカウント設定を確認してください。",
+            securityException,
+        )
+    }
     val credential = result.credential
     if (
         credential !is CustomCredential ||
@@ -273,5 +375,8 @@ private fun Throwable.userMessage(): String =
             Log.e("AndroidAuthGate", "Google credential request failed", this)
             localizedMessage ?: "Googleアカウントの選択が完了しませんでした。"
         }
+        is SecurityException -> {
+            localizedMessage ?: "Google Play開発者サービスの認証ブローカーに接続できませんでした。"
+        }
         else -> localizedMessage ?: "Googleログインに失敗しました。"
-    }
+}

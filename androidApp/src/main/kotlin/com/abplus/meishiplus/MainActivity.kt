@@ -18,6 +18,7 @@ import com.abplus.meishiplus.data.usecase.UserInit
 import com.abplus.meishiplus.pdf.AndroidCardPdfContext
 import com.abplus.meishiplus.viewmodel.UserViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
     private val firestore by lazy { FirebaseFirestore.getInstance() }
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
                 userViewModel = userViewModel,
                 userRepository = userRepository,
                 cardRepository = cardRepository,
+                deepLinkUri = deepLinkUri,
             )
         }
     }

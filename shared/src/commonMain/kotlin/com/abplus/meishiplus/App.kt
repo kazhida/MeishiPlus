@@ -47,6 +47,7 @@ fun App(
     userViewModel: UserViewModel? = null,
     userRepository: UserRepository? = null,
     cardRepository: CardRepository? = null,
+    startOnSnsAuth: Boolean = false,
 ) {
     val fallbackUserState = remember { MutableStateFlow(UserUiState()) }
     val ownedUserViewModel = remember(userRepository, cardRepository) {
@@ -74,7 +75,7 @@ fun App(
     MaterialTheme {
         NavHost(
             navController = navController,
-            startDestination = HomeRoute,
+            startDestination = if (startOnSnsAuth) SnsAuthRoute else HomeRoute,
         ) {
             composable<HomeRoute> {
                 TabPagerScreen(
@@ -82,6 +83,7 @@ fun App(
                     appUser = effectiveAppUser,
                     errorMessage = effectiveErrorMessage,
                     onSignOut = onSignOut,
+                    cardRepository = cardRepository,
                     onEditCard = { cardIndex ->
                         navController.navigate(CardEntryRoute(cardIndex))
                     },
@@ -196,6 +198,19 @@ fun App(
                 )
                 CardExchangeScreen(
                     cardEntity = card,
+                    onCardScanned = { partnerCardId ->
+                        val repository = cardRepository
+                        val currentUser = authUser
+                        if (repository != null && currentUser != null) {
+                            exchangeCard(
+                                cardRepository = repository,
+                                currentUid = currentUser.uid,
+                                currentCardId = card.id,
+                                partnerCardId = partnerCardId,
+                            )
+                            effectiveUserViewModel?.reloadCurrentUser()
+                        }
+                    },
                     onBackClick = {
                         navController.popBackStack()
                     },

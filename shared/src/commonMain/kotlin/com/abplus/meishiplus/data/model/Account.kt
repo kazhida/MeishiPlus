@@ -1,5 +1,8 @@
 package com.abplus.meishiplus.data.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 sealed class Account(
     open val service: String,
     open val userId: String,

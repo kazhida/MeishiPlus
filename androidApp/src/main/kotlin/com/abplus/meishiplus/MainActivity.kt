@@ -8,15 +8,25 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.abplus.meishiplus.auth.AndroidAuthGate
+import com.abplus.meishiplus.data.repositories.CardRepository
+import com.abplus.meishiplus.data.repositories.UserRepository
+import com.abplus.meishiplus.data.repositories.firestore.FireStoreCardRepository
+import com.abplus.meishiplus.data.repositories.firestore.FireStoreUserRepository
+import com.abplus.meishiplus.data.usecase.UserInit
 import com.abplus.meishiplus.pdf.AndroidCardPdfContext
 import com.abplus.meishiplus.viewmodel.UserViewModel
-import dagger.hilt.android.AndroidEntryPoint
-import jakarta.inject.Inject
+import com.google.firebase.firestore.FirebaseFirestore
 
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject
-    lateinit var userViewModel: UserViewModel
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
+    private val userRepository: UserRepository by lazy { FireStoreUserRepository(firestore) }
+    private val cardRepository: CardRepository by lazy { FireStoreCardRepository(firestore) }
+    private val userViewModel: UserViewModel by lazy {
+        UserViewModel(
+            userInit = UserInit(userRepository, cardRepository),
+            cardRepository = cardRepository,
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -25,7 +35,11 @@ class MainActivity : ComponentActivity() {
         AndroidCardPdfContext.applicationContext = applicationContext
 
         setContent {
-            AndroidAuthGate(userViewModel = userViewModel)
+            AndroidAuthGate(
+                userViewModel = userViewModel,
+                userRepository = userRepository,
+                cardRepository = cardRepository,
+            )
         }
     }
 }

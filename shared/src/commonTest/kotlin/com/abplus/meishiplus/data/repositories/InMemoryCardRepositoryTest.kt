@@ -117,4 +117,13 @@ private class InMemoryCardRepository : CardRepository {
     override suspend fun updateCard(card: CardEntity) {
         saveCard(card)
     }
+
+    override suspend fun appendPartnerId(cardId: String, partnerCardId: String) {
+        val current = getCard(cardId)
+        cards[cardId] = current.copy(
+            partnerIds = current.partnerIds
+                .plus(partnerCardId)
+                .distinct(),
+        )
+    }
 }

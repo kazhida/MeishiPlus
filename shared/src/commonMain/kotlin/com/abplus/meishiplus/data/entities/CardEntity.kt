@@ -1,16 +1,19 @@
 package com.abplus.meishiplus.data.entities
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class CardEntity(
     val id: String = "",
     val ownerUid: String = "",
-    val caption: String = "タブ",
-    val name: CardElement = CardElement("日高 重機", x = 0.07f, y = 0.33f, fontSize = 24f),
-    val email: CardElement = CardElement("hidaka@example.com", x = 0.20f, y = 0.66f, fontSize = 12f),
-    val address1: CardElement = CardElement("〒100-8111 東京都千代田区", x = 0.20f, y = 0.77f, fontSize = 12f),
-    val address2: CardElement = CardElement("千代田 1-1", x = 0.20f, y = 0.77f, fontSize = 12f),
+    val caption: String = "----",
+    val name: CardElement = CardElement("-------", x = 0.07f, y = 0.33f, fontSize = 24f),
+    val email: CardElement = CardElement("----@example.com", x = 0.20f, y = 0.66f, fontSize = 12f),
+    val address1: CardElement = CardElement("〒--- ---- 東京都千代田区", x = 0.20f, y = 0.77f, fontSize = 12f),
+    val address2: CardElement = CardElement("-------------", x = 0.20f, y = 0.77f, fontSize = 12f),
     val phone: CardElement = CardElement("+1 234-5678", x = 0.20f, y = 0.55f, fontSize = 12f),
-    val organization: CardElement = CardElement("秘密結社", x = 0.07f, y = 0.12f, fontSize = 14f),
-    val title: CardElement = CardElement("2等陸佐", x = 0.07f, y = 0.23f, fontSize = 14f),
+    val organization: CardElement = CardElement("------", x = 0.07f, y = 0.12f, fontSize = 14f),
+    val title: CardElement = CardElement("------", x = 0.07f, y = 0.23f, fontSize = 14f),
     val bgAlpha: Float = 0f,
     val bgFile: String = "",
     val createdAt: Long = 0L,
@@ -36,6 +39,7 @@ data class CardEntity(
         )
     }
 
+    @Serializable
     data class CardElement(
         val value: String = "",
         var x: Float = 0f,

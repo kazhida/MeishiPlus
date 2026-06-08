@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -37,6 +38,7 @@ import com.abplus.meishiplus.resources.resolveBusinessCardBackgroundUri
 fun CardItem(
     cardEntity: CardEntity,
     modifier: Modifier = Modifier,
+    fontScale: Float = 1f,
     onCardClick: () -> Unit = {},
     isLayoutLocked: Boolean = true,
     onCardChange: (CardEntity) -> Unit = {},
@@ -79,6 +81,7 @@ fun CardItem(
                     element = cardEntity.organization,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveOrganization(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -87,6 +90,7 @@ fun CardItem(
                     element = cardEntity.title,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveTitle(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -95,6 +99,7 @@ fun CardItem(
                     element = cardEntity.name,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveName(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -103,6 +108,7 @@ fun CardItem(
                     label = "TEL",
                     element = cardEntity.phone,
                     isVisible = cardEntity.phone.value.isNotBlank(),
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.movePhone(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -110,6 +116,7 @@ fun CardItem(
                 CardText(
                     element = cardEntity.phone,
                     style = MaterialTheme.typography.bodySmall,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.movePhone(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -118,6 +125,7 @@ fun CardItem(
                     label = "MAIL",
                     element = cardEntity.email,
                     isVisible = cardEntity.email.value.isNotBlank(),
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveEmail(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -125,6 +133,7 @@ fun CardItem(
                 CardText(
                     element = cardEntity.email,
                     style = MaterialTheme.typography.bodySmall,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveEmail(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -133,6 +142,7 @@ fun CardItem(
                     label = "ADDR",
                     element = cardEntity.address1,
                     isVisible = cardEntity.address1.value.isNotBlank() || cardEntity.address2.value.isNotBlank(),
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveAddress(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -145,6 +155,7 @@ fun CardItem(
                         cardEntity.address2.value,
                     ).filter { it.isNotBlank() }.joinToString("\n"),
                     maxLines = 2,
+                    fontScale = fontScale,
                     isLayoutLocked = isLayoutLocked,
                     onDrag = { dx, dy -> onCardChange(cardEntity.moveAddress(dx, dy)) },
                     onDragFinished = onLayoutChangeFinished,
@@ -163,6 +174,7 @@ private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.CardText(
     fontWeight: FontWeight? = null,
     text: String = element.value,
     maxLines: Int = 1,
+    fontScale: Float = 1f,
     isLayoutLocked: Boolean = true,
     onDrag: (Float, Float) -> Unit = { _, _ -> },
     onDragFinished: () -> Unit = {},
@@ -173,7 +185,7 @@ private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.CardText(
 
     Text(
         text = text,
-        style = style.copy(fontSize = element.fontSize.sp),
+        style = style.copy(fontSize = (element.fontSize * fontScale).sp),
         color = color,
         fontWeight = fontWeight,
         maxLines = maxLines,
@@ -199,6 +211,7 @@ private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.ContactLa
     label: String,
     element: CardEntity.CardElement,
     isVisible: Boolean,
+    fontScale: Float = 1f,
     isLayoutLocked: Boolean = true,
     onDrag: (Float, Float) -> Unit = { _, _ -> },
     onDragFinished: () -> Unit = {},
@@ -210,7 +223,7 @@ private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.ContactLa
 
     Text(
         text = label,
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.labelSmall.scaledFontSize(fontScale),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         modifier = Modifier
@@ -253,6 +266,15 @@ private fun Modifier.draggableCardElement(
                 )
             },
         )
+    }
+}
+
+private fun TextStyle.scaledFontSize(fontScale: Float): TextStyle {
+    val currentFontSize = fontSize
+    return if (currentFontSize == TextUnit.Unspecified) {
+        this
+    } else {
+        copy(fontSize = currentFontSize * fontScale)
     }
 }
 

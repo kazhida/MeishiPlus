@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,10 +25,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,11 +44,11 @@ import com.abplus.meishiplus.ui.components.CameraPermissionGate
 import com.abplus.meishiplus.ui.components.CardItem
 import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.ic_home
 import org.ncgroup.kscan.BarcodeFormat
 import org.ncgroup.kscan.BarcodeResult
-import org.ncgroup.kscan.ScannerUiOptions
 import org.ncgroup.kscan.ScannerView
 import org.ncgroup.kscan.scannerColors
 import org.jetbrains.compose.resources.painterResource
@@ -55,6 +59,7 @@ fun CardExchangeScreen(
     cardEntity: CardEntity,
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
+    onCardScanned: suspend (String) -> Unit = {},
 ) {
     val tabs = listOf("QRコード", "QR読み取り")
     val pagerState = rememberPagerState(
@@ -129,6 +134,7 @@ fun CardExchangeScreen(
                         )
                         else -> QrScannerPage(
                             modifier = Modifier.fillMaxSize(),
+                            onCardScanned = onCardScanned,
                         )
                     }
                 }
@@ -143,7 +149,7 @@ private fun CardIdQrCode(
     modifier: Modifier = Modifier,
 ) {
     Image(
-        painter = rememberQrCodePainter(cardId.ifBlank { " " }),
+        painter = rememberQrCodePainter(cardId),
         contentDescription = "カードIDのQRコード",
         contentScale = ContentScale.Fit,
         modifier = modifier,
@@ -153,57 +159,92 @@ private fun CardIdQrCode(
 @Composable
 private fun QrScannerPage(
     modifier: Modifier = Modifier,
+    onCardScanned: suspend (String) -> Unit = {},
 ) {
     var scannedCardId by rememberSaveable { mutableStateOf<String?>(null) }
+    var exchangedCardId by rememberSaveable { mutableStateOf<String?>(null) }
+    var scannerSession by rememberSaveable { mutableStateOf(0) }
+    var scanFeedbackMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    val currentOnCardScanned by rememberUpdatedState(onCardScanned)
+
+    fun restartScanner() {
+        scannedCardId = null
+        exchangedCardId = null
+        scannerSession++
+    }
+
+    fun autoRestartScanner() {
+        scannedCardId = null
+        scannerSession++
+    }
 
     CameraPermissionGate(modifier = modifier) {
-        BoxWithConstraints(
+        Column(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            val scannerSize = minOf(
-                maxWidth,
-                (maxHeight - 24.dp).coerceAtLeast(0.dp),
-                420.dp,
-            )
-
-            ScannerView(
+            BoxWithConstraints(
                 modifier = Modifier
-                    .padding(bottom = 12.dp)
-                    .size(scannerSize)
-                    .clipToBounds(),
-                codeTypes = listOf(BarcodeFormat.FORMAT_QR_CODE),
-                colors = scannerColors(
-                    headerContainerColor = Color(0xFF00AFAF),
-                    zoomControllerContainerColor = Color(0xFF00AFAF),
-                    barcodeFrameColor = Color(0xFF00AFAF),
-                ),
-                scannerUiOptions = ScannerUiOptions(
-                    headerTitle = "QR読み取り",
-                    showZoom = true,
-                    showTorch = true,
-                ),
-                result = { result ->
-                    if (result is BarcodeResult.OnSuccess) {
-                        scannedCardId = result.barcode.data
-                    }
-                },
-            )
-            scannedCardId?.let { cardId ->
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White,
-                    ),
-                ) {
-                    Text(
-                        text = cardId,
-                        modifier = Modifier.padding(12.dp),
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center,
+            ) {
+                val scannerSize = minOf(
+                    maxWidth,
+                    maxHeight,
+                    420.dp,
+                )
+
+                key(scannerSession) {
+                    ScannerView(
+                        modifier = Modifier
+                            .size(scannerSize)
+                            .clipToBounds(),
+                        codeTypes = listOf(BarcodeFormat.FORMAT_QR_CODE),
+                        colors = scannerColors(
+                            barcodeFrameColor = Color(0xFF00AFAF),
+                        ),
+                        scannerUiOptions = null,
+                        result = { result ->
+                            if (result is BarcodeResult.OnSuccess) {
+                                scannedCardId = result.barcode.data
+                            }
+                        },
                     )
                 }
+                scanFeedbackMessage?.let { message ->
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFE8F7F7),
+                        ),
+                    ) {
+                        Text(
+                            text = message,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            color = Color(0xFF006B6B),
+                        )
+                    }
+                }
+            }
+            LaunchedEffect(scannedCardId) {
+                val cardId = scannedCardId ?: return@LaunchedEffect
+                if (exchangedCardId == cardId) return@LaunchedEffect
+
+                currentOnCardScanned(cardId)
+                exchangedCardId = cardId
+                scanFeedbackMessage = "読み取り完了"
+                delay(1200)
+                scanFeedbackMessage = null
+                autoRestartScanner()
+            }
+            Button(
+                onClick = ::restartScanner,
+                modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+            ) {
+                Text("再読み取り")
             }
         }
     }

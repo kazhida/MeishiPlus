@@ -4,10 +4,12 @@ import com.abplus.meishiplus.data.entities.UserEntity
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 
 class InMemoryUserRepositoryTest {
+
     @Test
     fun addUser_assignsIdWhenBlank() = runTest {
         val repository = InMemoryUserRepository()
@@ -19,44 +21,86 @@ class InMemoryUserRepositoryTest {
     }
 
     @Test
-    fun addUser_preservesExplicitIdAndCards() = runTest {
+    fun addUser_preservesExplicitId() = runTest {
         val repository = InMemoryUserRepository()
-        val user = UserEntity(
-            id = "user-1",
-            cardIds = listOf("card-1", "card-2"),
-        )
 
-        val added = repository.addUser(user)
+        val added = repository.addUser(UserEntity(id = "user-1"))
 
         assertEquals("user-1", added.id)
-        assertEquals(listOf("card-1", "card-2"), added.cardIds)
         assertEquals(added, repository.getUser("user-1"))
     }
 
     @Test
-    fun saveUpdateAndDeleteUser_mutateStoredUser() = runTest {
+    fun addUser_preservesCardIds() = runTest {
         val repository = InMemoryUserRepository()
-        repository.saveUser(UserEntity(id = "user-1", cardIds = listOf("card-1")))
+        val user = UserEntity(id = "user-1", cardIds = listOf("card-1", "card-2"))
 
-        assertEquals(listOf("card-1"), repository.getUser("user-1").cardIds)
+        val added = repository.addUser(user)
 
-        repository.updateUser(UserEntity(id = "user-1", cardIds = listOf("card-2")))
-        assertEquals(listOf("card-2"), repository.getUser("user-1").cardIds)
-
-        repository.deleteUser("user-1")
-        assertFailsWith<IllegalStateException> {
-            repository.getUser("user-1")
-        }
+        assertEquals(listOf("card-1", "card-2"), added.cardIds)
     }
 
     @Test
-    fun getUser_failsWhenUserDoesNotExist() = runTest {
+    fun addUser_assignsUniqueIdsForMultipleUsers() = runTest {
+        val repository = InMemoryUserRepository()
+
+        val first = repository.addUser(UserEntity())
+        val second = repository.addUser(UserEntity())
+
+        assertNotEquals(first.id, second.id)
+    }
+
+    @Test
+    fun getUser_failsWhenNotFound() = runTest {
         val repository = InMemoryUserRepository()
 
         val error = assertFailsWith<IllegalStateException> {
             repository.getUser("missing")
         }
         assertEquals("User not found: missing", error.message)
+    }
+
+    @Test
+    fun saveUser_storesAndRetrievesUser() = runTest {
+        val repository = InMemoryUserRepository()
+        val user = UserEntity(id = "user-1", cardIds = listOf("card-1"))
+
+        repository.saveUser(user)
+
+        assertEquals(user, repository.getUser("user-1"))
+    }
+
+    @Test
+    fun updateUser_replacesStoredUser() = runTest {
+        val repository = InMemoryUserRepository()
+        repository.saveUser(UserEntity(id = "user-1", cardIds = listOf("card-1")))
+
+        repository.updateUser(UserEntity(id = "user-1", cardIds = listOf("card-2")))
+
+        assertEquals(listOf("card-2"), repository.getUser("user-1").cardIds)
+    }
+
+    @Test
+    fun deleteUser_removesUser() = runTest {
+        val repository = InMemoryUserRepository()
+        repository.saveUser(UserEntity(id = "user-1"))
+
+        repository.deleteUser("user-1")
+
+        assertFailsWith<IllegalStateException> {
+            repository.getUser("user-1")
+        }
+    }
+
+    @Test
+    fun deleteUser_doesNotAffectOtherUsers() = runTest {
+        val repository = InMemoryUserRepository()
+        repository.saveUser(UserEntity(id = "user-1"))
+        repository.saveUser(UserEntity(id = "user-2"))
+
+        repository.deleteUser("user-1")
+
+        assertEquals("user-2", repository.getUser("user-2").id)
     }
 }
 

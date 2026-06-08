@@ -9,4 +9,5 @@ interface CardRepository {
     suspend fun saveCard(card: CardEntity)
     suspend fun deleteCard(id: String)
     suspend fun updateCard(card: CardEntity)
+    suspend fun appendPartnerId(cardId: String, partnerCardId: String)
 }

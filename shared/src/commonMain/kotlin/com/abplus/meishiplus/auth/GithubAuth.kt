@@ -114,7 +114,7 @@ object GithubAuth {
         val user = response.body<AuthenticatedUserResponse>()
         return Account.Github(
             service = SERVICE,
-            userId = user.login,
+            userName = user.login,
             userUrl = user.htmlUrl ?: "$GITHUB_WEB_BASE_URL/${user.login}",
         )
     }

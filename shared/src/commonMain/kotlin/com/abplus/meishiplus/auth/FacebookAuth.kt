@@ -110,7 +110,7 @@ object FacebookAuth {
         val user = response.body<AuthenticatedUserResponse>()
         return Account.Facebook(
             service = SERVICE,
-            userId = user.id,
+            userName = user.id,
             userUrl = "$FACEBOOK_WEB_BASE_URL/${user.id}",
         )
     }

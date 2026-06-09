@@ -161,11 +161,12 @@ object XAuth {
         val user = response.body<AuthenticatedUserResponse>().data
         return Account.X(
             service = SERVICE,
-            userId = user.id,
+            userName = user.id,
             userUrl = user.username
                 ?.takeIf { it.isNotBlank() }
                 ?.let { "$X_WEB_BASE_URL/$it" }
                 ?: "$X_WEB_BASE_URL/i/user/${user.id}",
+            displayName = user.name?.takeIf { it.isNotBlank() } ?: user.username,
         )
     }
 
@@ -206,6 +207,7 @@ object XAuth {
     @Serializable
     private data class AuthenticatedUser(
         val id: String,
+        val name: String? = null,
         val username: String? = null,
     )
 
@@ -214,7 +216,7 @@ object XAuth {
     private const val TOKEN_URL = "$BASE_URL/oauth2/token"
     private const val X_WEB_BASE_URL = "https://x.com"
     private const val SERVICE = "x"
-    private const val DEFAULT_SCOPE = "users.read"
+    private const val DEFAULT_SCOPE = "tweet.read users.read"
     private const val CODE_CHALLENGE_METHOD_PLAIN = "plain"
     private const val CODE_CHALLENGE_METHOD_S256 = "S256"
     const val DEFAULT_REDIRECT_URI = "mspls://x"

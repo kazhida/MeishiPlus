@@ -76,6 +76,19 @@ class SnsAuthFlowTest {
     }
 
     @Test
+    fun xAuthorizationUrl_includesRequiredDefaultScopes() = runTest {
+        val verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+
+        val url = XAuth.authorizationUrl(
+            clientId = "client-id",
+            redirectUri = "mspls://x",
+            codeVerifier = verifier,
+        )
+
+        assertTrue(url.contains("scope=tweet.read%20users.read"))
+    }
+
+    @Test
     fun resolve_returnsMissingService_whenServiceIsBlank() {
         val outcome = SnsAuthRedirect(
             service = null,
@@ -195,26 +208,26 @@ private class RecordingAuthenticator : SnsAccountAuthenticator {
 
     override suspend fun authenticateGithub(code: String): Account.Github {
         calls += "github:$code"
-        return Account.Github(service = "github", userId = code, userUrl = "https://github.com/$code")
+        return Account.Github(service = "github", userName = code, userUrl = "https://github.com/$code")
     }
 
     override suspend fun authenticateX(code: String, state: String?): Account.X {
         calls += "x:$code:${state.orEmpty()}"
-        return Account.X(service = "x", userId = code, userUrl = "https://x.com/$code")
+        return Account.X(service = "x", userName = code, userUrl = "https://x.com/$code")
     }
 
     override suspend fun authenticateQiita(code: String): Account.Qiita {
         calls += "qiita:$code"
-        return Account.Qiita(service = "qiita", userId = code, userUrl = "https://qiita.com/$code")
+        return Account.Qiita(service = "qiita", userName = code, userUrl = "https://qiita.com/$code")
     }
 
     override suspend fun authenticateInstagram(code: String): Account.Instagram {
         calls += "instagram:$code"
-        return Account.Instagram(service = "instagram", userId = code, userUrl = "https://instagram.com/$code")
+        return Account.Instagram(service = "instagram", userName = code, userUrl = "https://instagram.com/$code")
     }
 
     override suspend fun authenticateFacebook(code: String): Account.Facebook {
         calls += "facebook:$code"
-        return Account.Facebook(service = "facebook", userId = code, userUrl = "https://facebook.com/$code")
+        return Account.Facebook(service = "facebook", userName = code, userUrl = "https://facebook.com/$code")
     }
 }

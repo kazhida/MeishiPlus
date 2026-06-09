@@ -15,8 +15,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.abplus.meishiplus.auth.AuthUser
-import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.entities.UserEntity
+import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
@@ -116,6 +116,30 @@ fun App(
                     },
                     onBackClick = {
                         navController.popBackStack()
+                    },
+                    onUnlinkAccount = { account ->
+                        val repository = userRepository
+                        val currentAppUser = effectiveAppUser
+                        if (repository != null && currentAppUser != null) {
+                            runCatching {
+                                val updatedUser = currentAppUser.user.copy(
+                                    accounts = currentAppUser.user.accounts.filterNot {
+                                        it.service.lowercase() == account.service.lowercase()
+                                    },
+                                )
+                                repository.saveUser(updatedUser)
+                                effectiveUserViewModel?.setAppUser(
+                                    AppUser(
+                                        user = updatedUser,
+                                        cards = currentAppUser.cards,
+                                    ),
+                                )
+                            }.onFailure { throwable ->
+                                effectiveUserViewModel?.setErrorMessage(
+                                    throwable.message ?: "SNS認証の解除に失敗しました。",
+                                )
+                            }
+                        }
                     },
                 )
             }

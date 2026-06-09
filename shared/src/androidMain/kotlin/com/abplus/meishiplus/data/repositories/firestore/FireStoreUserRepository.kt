@@ -82,21 +82,25 @@ private fun UserEntity.toMap(): Map<String, Any?> =
         }
     }
 
-private fun Account.toMap(): Map<String, String> =
-    mapOf(
-        "service" to service,
-        "userId" to userId,
-        "userUrl" to userUrl,
-    )
+private fun Account.toMap(): Map<String, Any?> =
+    buildMap {
+        put("service", service)
+        put("userId", userName)
+        put("userUrl", userUrl)
+        if (this@toMap is Account.X && displayName != null) {
+            put("displayName", displayName)
+        }
+    }
 
 private fun Map<*, *>.toAccount(): Account? {
     val service = this["service"] as? String ?: return null
     val userId = this["userId"] as? String ?: return null
     val userUrl = this["userUrl"] as? String ?: ""
+    val displayName = this["displayName"] as? String
 
     return when (service.lowercase()) {
         "facebook" -> Account.Facebook(service, userId, userUrl)
-        "x", "twitter" -> Account.X(service, userId, userUrl)
+        "x", "twitter" -> Account.X(service, userId, userUrl, displayName)
         "google" -> Account.Google(service, userId)
         "github" -> Account.Github(service, userId, userUrl)
         "instagram" -> Account.Instagram(service, userId, userUrl)

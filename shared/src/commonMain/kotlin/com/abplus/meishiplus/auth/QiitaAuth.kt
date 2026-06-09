@@ -114,7 +114,7 @@ object QiitaAuth {
         val user = response.body<AuthenticatedUserResponse>()
         return Account.Qiita(
             service = SERVICE,
-            userId = user.id,
+            userName = user.id,
             userUrl = "$QIITA_WEB_BASE_URL/${user.id}",
         )
     }

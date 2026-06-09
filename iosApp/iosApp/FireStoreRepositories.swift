@@ -288,11 +288,15 @@ private func cardElement(
 }
 
 private func accountDictionary(account: Account) -> [String: Any] {
-    [
+    var dictionary: [String: Any] = [
         "service": account.service,
         "userId": account.userId,
         "userUrl": account.userUrl,
     ]
+    if let account = account as? Account.X, let displayName = account.displayName {
+        dictionary["displayName"] = displayName
+    }
+    return dictionary
 }
 
 private func accountsValue(_ value: Any?) -> [Account] {
@@ -312,7 +316,7 @@ private extension Dictionary where Key == String, Value == Any {
         case "facebook":
             return Account.Facebook(service: service, userId: userId, userUrl: userUrl)
         case "x", "twitter":
-            return Account.X(service: service, userId: userId, userUrl: userUrl)
+            return Account.X(service: service, userId: userId, userUrl: userUrl, displayName: self["displayName"] as? String)
         case "google":
             return Account.Google(service: service, userId: userId)
         case "github":

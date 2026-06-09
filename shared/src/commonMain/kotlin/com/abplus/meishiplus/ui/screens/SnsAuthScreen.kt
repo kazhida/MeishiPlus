@@ -1,9 +1,9 @@
 package com.abplus.meishiplus.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -20,6 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -59,6 +61,7 @@ fun SnsAuthScreen(
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {},
     onBackClick: () -> Unit = {},
+    onUnlinkAccount: suspend (Account) -> Unit = {},
 ) {
     val isInteractionEnabled = !isRefreshing
     val uriHandler = LocalUriHandler.current
@@ -114,76 +117,114 @@ fun SnsAuthScreen(
             )
         },
     ) { innerPadding ->
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = onRefresh,
+        Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding),
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(vertical = 8.dp),
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = onRefresh,
+                modifier = Modifier.fillMaxSize(),
             ) {
-                items(
-                    items = snsAccounts,
-                    key = { it.serviceName },
-                ) { item ->
-                    SnsAuthListItem(
-                        item = item,
-                        onClick = if (isInteractionEnabled) {
-                            when (item.serviceName) {
-                                "GitHub" -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = 8.dp),
+                ) {
+                    items(
+                        items = snsAccounts,
+                        key = { it.serviceName },
+                    ) { item ->
+                        val onItemClick = if (isInteractionEnabled) {
+                            item.account?.profileUrl
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let { userUrl ->
                                     {
                                         coroutineScope.launch {
-                                            uriHandler.openUri(GithubAuth.authorizationUrl())
+                                            uriHandler.openUri(userUrl)
                                         }
+                                        Unit
                                     }
                                 }
-                                "Facebook" -> {
-                                    {
-                                        coroutineScope.launch {
-                                            val url = FacebookAuth.authorizationUrl()
-                                            println("DEBUG Facebook authorizationUrl: $url")
-                                            uriHandler.openUri(url)
+                                ?: when (item.serviceName) {
+                                    "GitHub" -> {
+                                        {
+                                            coroutineScope.launch {
+                                                uriHandler.openUri(GithubAuth.authorizationUrl())
+                                            }
+                                            Unit
                                         }
                                     }
-                                }
-                                "Instagram" -> {
-                                    {
-                                        coroutineScope.launch {
-                                            uriHandler.openUri(InstagramAuth.authorizationUrl())
+                                    "Facebook" -> {
+                                        {
+                                            coroutineScope.launch {
+                                                val url = FacebookAuth.authorizationUrl()
+                                                println("DEBUG Facebook authorizationUrl: $url")
+                                                uriHandler.openUri(url)
+                                            }
+                                            Unit
                                         }
                                     }
-                                }
-                                "Qiita" -> {
-                                    {
-                                        coroutineScope.launch {
-                                            uriHandler.openUri(QiitaAuth.authorizationUrl())
+                                    "Instagram" -> {
+                                        {
+                                            coroutineScope.launch {
+                                                uriHandler.openUri(InstagramAuth.authorizationUrl())
+                                            }
+                                            Unit
                                         }
                                     }
-                                }
-                                "X" -> {
-                                    {
-                                        coroutineScope.launch {
-                                            uriHandler.openUri(XAuth.authorizationUrl())
+                                    "Qiita" -> {
+                                        {
+                                            coroutineScope.launch {
+                                                uriHandler.openUri(QiitaAuth.authorizationUrl())
+                                            }
+                                            Unit
                                         }
                                     }
+                                    "X" -> {
+                                        {
+                                            coroutineScope.launch {
+                                                uriHandler.openUri(XAuth.authorizationUrl())
+                                            }
+                                            Unit
+                                        }
+                                    }
+                                    else -> null
                                 }
-                                else -> null
-                            }
                         } else {
                             null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 72.dp),
-                        thickness = DividerDefaults.Thickness,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                    )
+                        }
+                        SnsAuthListItem(
+                            item = item,
+                            onClick = onItemClick,
+                            onUnlinkClick = if (isInteractionEnabled && item.account != null) {
+                                {
+                                    val account = requireNotNull(item.account)
+                                    coroutineScope.launch {
+                                        onUnlinkAccount(account)
+                                    }
+                                }
+                            } else {
+                                null
+                            },
+                            enabled = isInteractionEnabled,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 72.dp),
+                            thickness = DividerDefaults.Thickness,
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                    }
+                }
+            }
+            if (isRefreshing) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
                 }
             }
         }
@@ -194,12 +235,14 @@ fun SnsAuthScreen(
 private fun SnsAuthListItem(
     item: SnsAccountItemSpec,
     onClick: (() -> Unit)?,
+    onUnlinkClick: (() -> Unit)?,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .clickable(
-                enabled = onClick != null,
+                enabled = enabled && onClick != null,
                 onClick = { onClick?.invoke() },
             )
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -222,8 +265,12 @@ private fun SnsAuthListItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            val accountName = when(item.account) {
+                is Account.X -> item.account.displayName
+                else -> item.account?.userName
+            }
             Text(
-                text = item.account?.userId ?: "未認証",
+                text = accountName ?: "未認証",
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (item.account == null) {
                     MaterialTheme.colorScheme.onSurfaceVariant
@@ -233,6 +280,14 @@ private fun SnsAuthListItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+        if (item.account != null) {
+            TextButton(
+                enabled = enabled && onUnlinkClick != null,
+                onClick = { onUnlinkClick?.invoke() },
+            ) {
+                Text("解除")
+            }
         }
     }
 }

@@ -116,7 +116,7 @@ object InstagramAuth {
         val userId = user.username ?: user.userId ?: user.id
         return Account.Instagram(
             service = SERVICE,
-            userId = userId,
+            userName = userId,
             userUrl = user.username?.let { "$INSTAGRAM_WEB_BASE_URL/$it" }.orEmpty(),
         )
     }

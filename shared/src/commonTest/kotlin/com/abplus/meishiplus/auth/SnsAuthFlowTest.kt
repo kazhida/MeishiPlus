@@ -49,6 +49,14 @@ class SnsAuthFlowTest {
     }
 
     @Test
+    fun facebookRedirectUri_trimsTrailingSlashFromRedirectServer() {
+        assertEquals(
+            "https://example.com/facebook",
+            FacebookAuth.buildRedirectUri("https://example.com/"),
+        )
+    }
+
+    @Test
     fun xPkceChallenge_matchesRfc7636Example() {
         val verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
         assertEquals(

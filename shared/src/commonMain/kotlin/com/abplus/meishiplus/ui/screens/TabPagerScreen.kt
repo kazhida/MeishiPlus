@@ -166,6 +166,7 @@ fun TabPagerScreen(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
+                alpha = 0.5f
             )
             Scaffold(
                 containerColor = Color.Transparent,

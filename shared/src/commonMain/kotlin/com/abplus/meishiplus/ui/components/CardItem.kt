@@ -58,7 +58,7 @@ fun CardItem(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
         shape = RoundedCornerShape(4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (cardEntity.bgFile.isNotBlank()) {

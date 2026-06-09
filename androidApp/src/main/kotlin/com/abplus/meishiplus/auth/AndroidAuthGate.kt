@@ -41,12 +41,6 @@ import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
-import com.abplus.meishiplus.auth.resolveSnsAuthService
-import com.abplus.meishiplus.auth.snsAuthFailedMessage
-import com.abplus.meishiplus.auth.snsAuthInvalidRedirectMessage
-import com.abplus.meishiplus.auth.snsAuthMissingCodeMessage
-import com.abplus.meishiplus.auth.snsAuthReflectFailedMessage
-import com.abplus.meishiplus.auth.snsAuthUnsupportedServiceMessage
 import com.abplus.meishiplus.viewmodel.UserViewModel
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability

@@ -114,7 +114,7 @@ fun TabPagerScreen(
                 modifier = Modifier.fillMaxWidth(0.75f),
             ) {
                 ProfileHeader(authUser = authUser)
-                drawerItems.forEachIndexed { index, item ->
+                drawerItems.forEachIndexed { _, item ->
                     NavigationDrawerItem(
                         icon = {
                             Icon(

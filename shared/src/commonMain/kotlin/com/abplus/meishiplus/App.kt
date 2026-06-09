@@ -1,7 +1,5 @@
 package com.abplus.meishiplus
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -11,7 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -69,7 +66,6 @@ fun App(
     val effectiveAppUser = appUser ?: userState.appUser
     val effectiveErrorMessage = errorMessage ?: userState.errorMessage
     val navController = rememberNavController()
-    var previewPartnerCard by remember { androidx.compose.runtime.mutableStateOf<CardEntity?>(null) }
 
     MaterialTheme {
         NavHost(

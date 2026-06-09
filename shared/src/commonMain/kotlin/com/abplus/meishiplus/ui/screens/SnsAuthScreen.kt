@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,8 +56,11 @@ import org.jetbrains.compose.resources.painterResource
 fun SnsAuthScreen(
     userEntity: UserEntity = UserEntity(),
     modifier: Modifier = Modifier,
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
     onBackClick: () -> Unit = {},
 ) {
+    val isInteractionEnabled = !isRefreshing
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
     val snsAccounts = listOf(
@@ -97,7 +101,10 @@ fun SnsAuthScreen(
                     navigationIconContentColor = Color.White,
                 ),
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(
+                        enabled = isInteractionEnabled,
+                        onClick = onBackClick,
+                    ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_home),
                             contentDescription = "戻る",
@@ -107,66 +114,77 @@ fun SnsAuthScreen(
             )
         },
     ) { innerPadding ->
-        LazyColumn(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
             modifier = modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(innerPadding)
-                .padding(vertical = 8.dp),
+                .padding(innerPadding),
         ) {
-            items(
-                items = snsAccounts,
-                key = { it.serviceName },
-            ) { item ->
-                SnsAuthListItem(
-                    item = item,
-                    onClick = when (item.serviceName) {
-                        "GitHub" -> {
-                            {
-                                coroutineScope.launch {
-                                    uriHandler.openUri(GithubAuth.authorizationUrl())
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 8.dp),
+            ) {
+                items(
+                    items = snsAccounts,
+                    key = { it.serviceName },
+                ) { item ->
+                    SnsAuthListItem(
+                        item = item,
+                        onClick = if (isInteractionEnabled) {
+                            when (item.serviceName) {
+                                "GitHub" -> {
+                                    {
+                                        coroutineScope.launch {
+                                            uriHandler.openUri(GithubAuth.authorizationUrl())
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        "Facebook" -> {
-                            {
-                                coroutineScope.launch {
-                                    val url = FacebookAuth.authorizationUrl()
-                                    println("DEBUG Facebook authorizationUrl: $url")
-                                    uriHandler.openUri(url)
+                                "Facebook" -> {
+                                    {
+                                        coroutineScope.launch {
+                                            val url = FacebookAuth.authorizationUrl()
+                                            println("DEBUG Facebook authorizationUrl: $url")
+                                            uriHandler.openUri(url)
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        "Instagram" -> {
-                            {
-                                coroutineScope.launch {
-                                    uriHandler.openUri(InstagramAuth.authorizationUrl())
+                                "Instagram" -> {
+                                    {
+                                        coroutineScope.launch {
+                                            uriHandler.openUri(InstagramAuth.authorizationUrl())
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        "Qiita" -> {
-                            {
-                                coroutineScope.launch {
-                                    uriHandler.openUri(QiitaAuth.authorizationUrl())
+                                "Qiita" -> {
+                                    {
+                                        coroutineScope.launch {
+                                            uriHandler.openUri(QiitaAuth.authorizationUrl())
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        "X" -> {
-                            {
-                                coroutineScope.launch {
-                                    uriHandler.openUri(XAuth.authorizationUrl())
+                                "X" -> {
+                                    {
+                                        coroutineScope.launch {
+                                            uriHandler.openUri(XAuth.authorizationUrl())
+                                        }
+                                    }
                                 }
+                                else -> null
                             }
-                        }
-                        else -> null
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(start = 72.dp),
-                    thickness = DividerDefaults.Thickness,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                )
+                        } else {
+                            null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 72.dp),
+                        thickness = DividerDefaults.Thickness,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                    )
+                }
             }
         }
     }

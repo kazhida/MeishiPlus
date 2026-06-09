@@ -33,6 +33,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,6 +77,8 @@ fun TabPagerScreen(
     errorMessage: String? = null,
     onSignOut: (() -> Unit)? = null,
     cardRepository: CardRepository? = null,
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
     onEditCard: (Int) -> Unit = {},
     onLayoutCard: (Int) -> Unit = {},
     onPrintCard: (Int) -> Unit = {},
@@ -84,6 +87,7 @@ fun TabPagerScreen(
     onPreviewPartnerCard: (CardEntity) -> Unit = {},
     onSnsAuthClick: () -> Unit = {},
 ) {
+    val isInteractionEnabled = !isRefreshing
     val cards = appUser?.cards.orEmpty()
     val tabs = if (cards.isNotEmpty()) {
         cards.mapIndexed { index, card -> card.caption.ifBlank { "名刺${index + 1}" } }
@@ -104,6 +108,7 @@ fun TabPagerScreen(
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = isInteractionEnabled,
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.fillMaxWidth(0.75f),
@@ -120,6 +125,7 @@ fun TabPagerScreen(
                         label = { Text(item.title) },
                         selected = item.destination == DrawerDestination.Home,
                         onClick = {
+                            if (!isInteractionEnabled) return@NavigationDrawerItem
                             when (item.destination) {
                                 DrawerDestination.SnsAuth -> onSnsAuthClick()
                                 DrawerDestination.Home,
@@ -143,7 +149,11 @@ fun TabPagerScreen(
                         },
                         label = { Text("ログアウト") },
                         selected = false,
-                        onClick = onSignOut,
+                        onClick = {
+                            if (isInteractionEnabled) {
+                                onSignOut()
+                            }
+                        },
                         modifier = Modifier.padding(horizontal = 12.dp),
                     )
                 }
@@ -169,6 +179,7 @@ fun TabPagerScreen(
                         ),
                         navigationIcon = {
                             IconButton(
+                                enabled = isInteractionEnabled,
                                 onClick = {
                                     coroutineScope.launch {
                                         drawerState.open()
@@ -195,6 +206,7 @@ fun TabPagerScreen(
                         tabs.forEachIndexed { index, title ->
                             Tab(
                                 selected = pagerState.currentPage == index,
+                                enabled = isInteractionEnabled,
                                 onClick = {
                                     coroutineScope.launch {
                                         pagerState.animateScrollToPage(index)
@@ -207,6 +219,7 @@ fun TabPagerScreen(
 
                     HorizontalPager(
                         state = pagerState,
+                        userScrollEnabled = isInteractionEnabled,
                         modifier = Modifier.fillMaxSize(),
                     ) { page ->
                         if (errorMessage != null) {
@@ -220,33 +233,40 @@ fun TabPagerScreen(
                                 )
                             }
                         } else {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                TabPage(
-                                    title = tabs[page],
-                                    cardIndex = page,
-                                    cardEntity = cards.getOrNull(page),
-                                    cards = cards,
-                                    cardRepository = cardRepository,
-                                    onPreviewCard = onPreviewCard,
-                                    onPreviewPartnerCard = onPreviewPartnerCard,
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp),
-                                ) {
-                                    CardItemActionMenu(
-                                        onMenuClick = {},
-                                        onEditClick = { onEditCard(page) },
-                                        onLayoutClick = { onLayoutCard(page) },
-                                        onPrintClick = { onPrintCard(page) },
-                                        onSwapClick = { onExchangeCard(page) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .widthIn(max = 460.dp)
-                                            .wrapContentSize(Alignment.TopEnd),
+                            PullToRefreshBox(
+                                isRefreshing = isRefreshing,
+                                onRefresh = onRefresh,
+                                modifier = Modifier.fillMaxSize(),
+                            ) {
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    TabPage(
+                                        title = tabs[page],
+                                        cardIndex = page,
+                                        cardEntity = cards.getOrNull(page),
+                                        cards = cards,
+                                        cardRepository = cardRepository,
+                                        onPreviewCard = onPreviewCard,
+                                        onPreviewPartnerCard = onPreviewPartnerCard,
+                                        modifier = Modifier.fillMaxSize(),
                                     )
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp),
+                                    ) {
+                                        CardItemActionMenu(
+                                            enabled = isInteractionEnabled,
+                                            onMenuClick = {},
+                                            onEditClick = { onEditCard(page) },
+                                            onLayoutClick = { onLayoutCard(page) },
+                                            onPrintClick = { onPrintCard(page) },
+                                            onSwapClick = { onExchangeCard(page) },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .widthIn(max = 460.dp)
+                                                .wrapContentSize(Alignment.TopEnd),
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -459,6 +479,7 @@ private fun PartnerCardPlaceholder(
 
 @Composable
 private fun CardItemActionMenu(
+    enabled: Boolean,
     onMenuClick: () -> Unit,
     onEditClick: () -> Unit,
     onLayoutClick: () -> Unit,
@@ -467,6 +488,12 @@ private fun CardItemActionMenu(
     modifier: Modifier = Modifier,
 ) {
     var isActionMenuVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(enabled) {
+        if (!enabled) {
+            isActionMenuVisible = false
+        }
+    }
 
     Column(
         modifier = modifier.padding(
@@ -478,6 +505,7 @@ private fun CardItemActionMenu(
         CardItemActionButton(
             icon = Res.drawable.ic_menu,
             contentDescription = "メニュー",
+            enabled = enabled,
             onClick = {
                 isActionMenuVisible = !isActionMenuVisible
                 onMenuClick()
@@ -487,21 +515,25 @@ private fun CardItemActionMenu(
             CardItemActionButton(
                 icon = Res.drawable.ic_edit,
                 contentDescription = "編集",
+                enabled = enabled,
                 onClick = onEditClick,
             )
             CardItemActionButton(
                 icon = Res.drawable.ic_layout,
                 contentDescription = "レイアウト",
+                enabled = enabled,
                 onClick = onLayoutClick,
             )
             CardItemActionButton(
                 icon = Res.drawable.ic_print,
                 contentDescription = "印刷",
+                enabled = enabled,
                 onClick = onPrintClick,
             )
             CardItemActionButton(
                 icon = Res.drawable.ic_swap,
                 contentDescription = "交換",
+                enabled = enabled,
                 onClick = onSwapClick,
             )
         }
@@ -512,9 +544,11 @@ private fun CardItemActionMenu(
 private fun CardItemActionButton(
     icon: DrawableResource,
     contentDescription: String,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     IconButton(
+        enabled = enabled,
         onClick = onClick,
         modifier = Modifier
             .padding(4.dp)

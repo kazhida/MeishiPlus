@@ -84,6 +84,10 @@ fun App(
                     errorMessage = effectiveErrorMessage,
                     onSignOut = onSignOut,
                     cardRepository = cardRepository,
+                    isRefreshing = userState.isLoading,
+                    onRefresh = {
+                        effectiveUserViewModel?.reloadCurrentUser()
+                    },
                     onEditCard = { cardIndex ->
                         navController.navigate(CardEntryRoute(cardIndex))
                     },
@@ -109,6 +113,10 @@ fun App(
             composable<SnsAuthRoute> {
                 SnsAuthScreen(
                     userEntity = effectiveAppUser?.user ?: UserEntity(),
+                    isRefreshing = userState.isLoading,
+                    onRefresh = {
+                        effectiveUserViewModel?.reloadCurrentUser()
+                    },
                     onBackClick = {
                         navController.popBackStack()
                     },

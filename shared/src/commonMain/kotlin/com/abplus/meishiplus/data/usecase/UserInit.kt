@@ -26,19 +26,40 @@ class UserInit(
         val defaultName = authUser.displayName ?: CardEntity.default().name.value
         val defaultEmail = authUser.email ?: CardEntity.default().email.value
 
-        val createdCards = listOf("Public", "Private").map { caption ->
-            cardRepository.addCard(
-                CardEntity.default().copy(
-                    ownerUid = authUser.uid,
-                    caption = caption,
-                    name = CardEntity.default().name.copy(value = defaultName),
-                    email = CardEntity.default().email.copy(value = defaultEmail),
-                )
-            )
-        }
+        val createdCards = listOf(
+            createDefaultCard(
+                ownerUid = authUser.uid,
+                caption = "Public",
+                defaultName = defaultName,
+                defaultEmail = defaultEmail,
+            ),
+            createDefaultCard(
+                ownerUid = authUser.uid,
+                caption = "Private",
+                defaultName = defaultName,
+                defaultEmail = defaultEmail,
+            ),
+        ).onEach { cardRepository.saveCard(it) }
         val updatedUser = userEntity.copy(cardIds = createdCards.map { it.id })
         userRepository.saveUser(updatedUser)
 
         return AppUser(user = updatedUser, cards = createdCards)
     }
+
+    private fun createDefaultCard(
+        ownerUid: String,
+        caption: String,
+        defaultName: String,
+        defaultEmail: String,
+    ): CardEntity =
+        CardEntity.default().copy(
+            id = defaultCardId(ownerUid, caption),
+            ownerUid = ownerUid,
+            caption = caption,
+            name = CardEntity.default().name.copy(value = defaultName),
+            email = CardEntity.default().email.copy(value = defaultEmail),
+        )
+
+    private fun defaultCardId(ownerUid: String, caption: String): String =
+        "${ownerUid.lowercase()}-${caption.lowercase()}"
 }

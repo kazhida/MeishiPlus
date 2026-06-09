@@ -83,6 +83,7 @@ fun AndroidAuthGate(
             val outcome = SnsAuthRedirect(
                 service = resolveSnsAuthService(uri.host, uri.pathSegments),
                 code = uri.getQueryParameter("code"),
+                state = uri.getQueryParameter("state"),
                 error = uri.getQueryParameter("error"),
                 errorDescription = uri.getQueryParameter("error_description")
                     ?: uri.getQueryParameter("error_reason"),
@@ -111,6 +112,7 @@ fun AndroidAuthGate(
                     val account = authenticateSnsAccount(
                         service = outcome.service,
                         code = outcome.code,
+                        state = outcome.state,
                     )
                     val currentUser = runCatching {
                         userRepository.getUser(authUser.uid)

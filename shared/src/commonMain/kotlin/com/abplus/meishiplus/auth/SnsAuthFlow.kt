@@ -12,6 +12,7 @@ import org.jetbrains.compose.resources.getString
 data class SnsAuthRedirect(
     val service: String?,
     val code: String?,
+    val state: String?,
     val error: String?,
     val errorDescription: String?,
 ) {
@@ -26,6 +27,7 @@ data class SnsAuthRedirect(
             else -> SnsAuthRedirectOutcome.Success(
                 service = service,
                 code = code,
+                state = state,
             )
         }
 }
@@ -74,13 +76,14 @@ sealed interface SnsAuthRedirectOutcome {
     data class Success(
         val service: String,
         val code: String,
+        val state: String?,
     ) : SnsAuthRedirectOutcome
 }
 
 interface SnsAccountAuthenticator {
     suspend fun authenticateGithub(code: String): Account.Github
 
-    suspend fun authenticateX(code: String): Account.X
+    suspend fun authenticateX(code: String, state: String? = null): Account.X
 
     suspend fun authenticateQiita(code: String): Account.Qiita
 
@@ -93,8 +96,8 @@ object DefaultSnsAccountAuthenticator : SnsAccountAuthenticator {
     override suspend fun authenticateGithub(code: String): Account.Github =
         GithubAuth.authenticate(code)
 
-    override suspend fun authenticateX(code: String): Account.X =
-        XAuth.authenticate(code)
+    override suspend fun authenticateX(code: String, state: String?): Account.X =
+        XAuth.authenticate(code = code, state = state)
 
     override suspend fun authenticateQiita(code: String): Account.Qiita =
         QiitaAuth.authenticate(code)
@@ -109,11 +112,12 @@ object DefaultSnsAccountAuthenticator : SnsAccountAuthenticator {
 suspend fun authenticateSnsAccount(
     service: String,
     code: String,
+    state: String? = null,
     authenticator: SnsAccountAuthenticator = DefaultSnsAccountAuthenticator,
 ): Account =
     when (service.lowercase()) {
         "github" -> authenticator.authenticateGithub(code)
-        "x" -> authenticator.authenticateX(code)
+        "x" -> authenticator.authenticateX(code, state)
         "qiita" -> authenticator.authenticateQiita(code)
         "instagram" -> authenticator.authenticateInstagram(code)
         "facebook" -> authenticator.authenticateFacebook(code)

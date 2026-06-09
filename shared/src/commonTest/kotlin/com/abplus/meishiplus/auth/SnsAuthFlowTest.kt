@@ -49,10 +49,38 @@ class SnsAuthFlowTest {
     }
 
     @Test
+    fun xPkceChallenge_matchesRfc7636Example() {
+        val verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+        assertEquals(
+            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+            createXAuthCodeChallenge(verifier),
+        )
+    }
+
+    @Test
+    fun xAuthorizationUrl_storesVerifierForState() = runTest {
+        val state = "test-state"
+        val verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+        val expectedChallenge = createXAuthCodeChallenge(verifier)
+
+        val url = XAuth.authorizationUrl(
+            clientId = "client-id",
+            redirectUri = "mspls://x",
+            state = state,
+            codeVerifier = verifier,
+        )
+
+        assertTrue(url.contains("state=$state"))
+        assertTrue(url.contains("code_challenge=$expectedChallenge"))
+        assertEquals(verifier, resolveXAuthCodeVerifier(state = state))
+    }
+
+    @Test
     fun resolve_returnsMissingService_whenServiceIsBlank() {
         val outcome = SnsAuthRedirect(
             service = null,
             code = "code-1",
+            state = null,
             error = null,
             errorDescription = null,
         ).resolve()
@@ -65,6 +93,7 @@ class SnsAuthFlowTest {
         val outcome = SnsAuthRedirect(
             service = "github",
             code = "code-1",
+            state = null,
             error = "access_denied",
             errorDescription = "user cancelled",
         ).resolve()
@@ -79,6 +108,7 @@ class SnsAuthFlowTest {
         val outcome = SnsAuthRedirect(
             service = "github",
             code = null,
+            state = null,
             error = null,
             errorDescription = null,
         ).resolve()
@@ -91,6 +121,7 @@ class SnsAuthFlowTest {
         val outcome = SnsAuthRedirect(
             service = "github",
             code = "code-1",
+            state = "pkce-state-1",
             error = null,
             errorDescription = null,
         ).resolve()
@@ -98,6 +129,7 @@ class SnsAuthFlowTest {
         val success = assertIs<SnsAuthRedirectOutcome.Success>(outcome)
         assertEquals("github", success.service)
         assertEquals("code-1", success.code)
+        assertEquals("pkce-state-1", success.state)
     }
 
     @Test
@@ -119,11 +151,11 @@ class SnsAuthFlowTest {
         val authenticator = RecordingAuthenticator()
 
         val accounts = listOf(
-            authenticateSnsAccount("github", "code-github", authenticator),
-            authenticateSnsAccount("x", "code-x", authenticator),
-            authenticateSnsAccount("qiita", "code-qiita", authenticator),
-            authenticateSnsAccount("instagram", "code-instagram", authenticator),
-            authenticateSnsAccount("facebook", "code-facebook", authenticator),
+            authenticateSnsAccount("github", "code-github", authenticator = authenticator),
+            authenticateSnsAccount("x", "code-x", state = "state-x", authenticator = authenticator),
+            authenticateSnsAccount("qiita", "code-qiita", authenticator = authenticator),
+            authenticateSnsAccount("instagram", "code-instagram", authenticator = authenticator),
+            authenticateSnsAccount("facebook", "code-facebook", authenticator = authenticator),
         )
 
         assertTrue(accounts[0] is Account.Github)
@@ -134,7 +166,7 @@ class SnsAuthFlowTest {
         assertEquals(
             listOf(
                 "github:code-github",
-                "x:code-x",
+                "x:code-x:state-x",
                 "qiita:code-qiita",
                 "instagram:code-instagram",
                 "facebook:code-facebook",
@@ -166,8 +198,8 @@ private class RecordingAuthenticator : SnsAccountAuthenticator {
         return Account.Github(service = "github", userId = code, userUrl = "https://github.com/$code")
     }
 
-    override suspend fun authenticateX(code: String): Account.X {
-        calls += "x:$code"
+    override suspend fun authenticateX(code: String, state: String?): Account.X {
+        calls += "x:$code:${state.orEmpty()}"
         return Account.X(service = "x", userId = code, userUrl = "https://x.com/$code")
     }
 

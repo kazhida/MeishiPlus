@@ -31,24 +31,36 @@ object XAuth {
     suspend fun authorizationUrl(
         clientId: String? = null,
         redirectUri: String = DEFAULT_REDIRECT_URI,
-        codeChallenge: String = DEFAULT_CODE_VERIFIER,
+        state: String? = null,
+        codeVerifier: String? = null,
         scope: String = DEFAULT_SCOPE,
-        state: String = DEFAULT_STATE,
-        codeChallengeMethod: String = CODE_CHALLENGE_METHOD_PLAIN,
+        codeChallengeMethod: String = CODE_CHALLENGE_METHOD_S256,
     ): String {
         require(redirectUri.isNotBlank()) { "redirectUri must not be blank." }
-        require(codeChallenge.isNotBlank()) { "codeChallenge must not be blank." }
-        require(codeChallenge.length in PKCE_LENGTH_RANGE) { "codeChallenge must be 43 to 128 characters." }
-        require(state.isNotBlank()) { "state must not be blank." }
+
+        val pkceSession = createXAuthPkceSession(
+            state = state,
+            codeVerifier = codeVerifier,
+        )
+        val resolvedCodeChallengeMethod = when (codeChallengeMethod.lowercase()) {
+            CODE_CHALLENGE_METHOD_S256.lowercase() -> CODE_CHALLENGE_METHOD_S256
+            CODE_CHALLENGE_METHOD_PLAIN -> CODE_CHALLENGE_METHOD_PLAIN
+            else -> error("Unsupported code challenge method: $codeChallengeMethod")
+        }
+        val resolvedCodeChallenge = when (resolvedCodeChallengeMethod) {
+            CODE_CHALLENGE_METHOD_S256 -> createXAuthCodeChallenge(pkceSession.codeVerifier)
+            CODE_CHALLENGE_METHOD_PLAIN -> pkceSession.codeVerifier
+            else -> error("Unsupported code challenge method: $resolvedCodeChallengeMethod")
+        }
 
         return URLBuilder(AUTHORIZATION_URL).apply {
             parameters.append("response_type", "code")
             parameters.append("client_id", clientId ?: defaultClientId())
             parameters.append("redirect_uri", redirectUri)
             parameters.append("scope", scope)
-            parameters.append("code_challenge", codeChallenge)
-            parameters.append("code_challenge_method", codeChallengeMethod)
-            parameters.append("state", state)
+            parameters.append("code_challenge", resolvedCodeChallenge)
+            parameters.append("code_challenge_method", resolvedCodeChallengeMethod)
+            parameters.append("state", pkceSession.state)
         }.buildString()
     }
 
@@ -57,15 +69,20 @@ object XAuth {
         clientId: String? = null,
         clientSecret: String? = null,
         redirectUri: String = DEFAULT_REDIRECT_URI,
-        codeVerifier: String = DEFAULT_CODE_VERIFIER,
+        state: String? = null,
+        codeVerifier: String? = null,
         httpClient: HttpClient = defaultHttpClient,
     ): Account.X {
+        val resolvedCodeVerifier = resolveXAuthCodeVerifier(
+            state = state,
+            codeVerifier = codeVerifier,
+        )
         val accessToken = exchangeCodeForAccessToken(
             code = code,
             clientId = clientId,
             clientSecret = clientSecret,
             redirectUri = redirectUri,
-            codeVerifier = codeVerifier,
+            codeVerifier = resolvedCodeVerifier,
             httpClient = httpClient,
         )
         return getAuthenticatedAccount(
@@ -79,13 +96,13 @@ object XAuth {
         clientId: String? = null,
         clientSecret: String? = null,
         redirectUri: String = DEFAULT_REDIRECT_URI,
-        codeVerifier: String = DEFAULT_CODE_VERIFIER,
+        codeVerifier: String,
         httpClient: HttpClient = defaultHttpClient,
     ): String {
         require(code.isNotBlank()) { "code must not be blank." }
         require(redirectUri.isNotBlank()) { "redirectUri must not be blank." }
         require(codeVerifier.isNotBlank()) { "codeVerifier must not be blank." }
-        require(codeVerifier.length in PKCE_LENGTH_RANGE) { "codeVerifier must be 43 to 128 characters." }
+        require(codeVerifier.length in XAuthPkceLengthRange) { "codeVerifier must be 43 to 128 characters." }
 
         val resolvedClientId = clientId ?: defaultClientId()
         val resolvedClientSecret = clientSecret ?: defaultClientSecret()
@@ -198,9 +215,7 @@ object XAuth {
     private const val X_WEB_BASE_URL = "https://x.com"
     private const val SERVICE = "x"
     private const val DEFAULT_SCOPE = "users.read"
-    private const val DEFAULT_STATE = "meishiplus-x-auth"
-    private const val DEFAULT_CODE_VERIFIER = "meishiplus-x-oauth-code-verifier-0123456789abcdef"
     private const val CODE_CHALLENGE_METHOD_PLAIN = "plain"
+    private const val CODE_CHALLENGE_METHOD_S256 = "S256"
     const val DEFAULT_REDIRECT_URI = "mspls://x"
-    private val PKCE_LENGTH_RANGE = 43..128
 }

@@ -21,9 +21,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -73,7 +71,6 @@ fun AndroidAuthGate(
     val credentialManager = remember { CredentialManager.create(context) }
     val uiState by userViewModel.uiState.collectAsState()
     val pendingDeepLink by deepLinkUri.collectAsState()
-    var guestModeEnabled by remember { mutableStateOf(false) }
 
     DisposableEffect(auth, userViewModel) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -155,28 +152,12 @@ fun AndroidAuthGate(
     }
 
     if (!uiState.isAuthResolved) {
-        if (!guestModeEnabled) {
-            AuthLoadingScreen()
-            return
-        }
-    }
-
-    if (uiState.authUser != null && uiState.appUser == null && uiState.isLoading) {
         AuthLoadingScreen()
         return
     }
 
-    if (guestModeEnabled) {
-        App(
-            authUser = null,
-            onSignOut = null,
-            appUser = null,
-            errorMessage = null,
-            userViewModel = userViewModel,
-            userRepository = userRepository,
-            cardRepository = cardRepository,
-            startOnSnsAuth = true,
-        )
+    if (uiState.authUser != null && uiState.appUser == null && uiState.isLoading) {
+        AuthLoadingScreen()
         return
     }
 
@@ -213,9 +194,6 @@ fun AndroidAuthGate(
                 toErrorMessage = Throwable::userMessage,
             )
         },
-        onSkipGoogleSignIn = {
-            guestModeEnabled = true
-        },
     )
 }
 
@@ -238,7 +216,6 @@ private fun SignInScreen(
     isLoading: Boolean,
     errorMessage: String?,
     onSignIn: () -> Unit,
-    onSkipGoogleSignIn: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -273,16 +250,6 @@ private fun SignInScreen(
                 } else {
                     Text("Googleでログイン")
                 }
-            }
-            Button(
-                onClick = onSkipGoogleSignIn,
-                enabled = !isLoading,
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-            ) {
-                Text("Googleログインをスキップ")
             }
             errorMessage?.let { message ->
                 Text(

@@ -47,7 +47,6 @@ fun App(
     userViewModel: UserViewModel? = null,
     userRepository: UserRepository? = null,
     cardRepository: CardRepository? = null,
-    startOnSnsAuth: Boolean = false,
 ) {
     val fallbackUserState = remember { MutableStateFlow(UserUiState()) }
     val ownedUserViewModel = remember(userRepository, cardRepository) {
@@ -75,7 +74,7 @@ fun App(
     MaterialTheme {
         NavHost(
             navController = navController,
-            startDestination = if (startOnSnsAuth) SnsAuthRoute else HomeRoute,
+            startDestination = HomeRoute,
         ) {
             composable<HomeRoute> {
                 TabPagerScreen(
@@ -104,8 +103,10 @@ fun App(
                         navController.navigate(CardPreviewRoute(cardIndex))
                     },
                     onSnsAuthClick = {
-                        navController.navigate(SnsAuthRoute) {
-                            launchSingleTop = true
+                        if (authUser != null) {
+                            navController.navigate(SnsAuthRoute) {
+                                launchSingleTop = true
+                            }
                         }
                     },
                 )

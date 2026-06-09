@@ -207,13 +207,21 @@ fun App(
                         val repository = cardRepository
                         val currentUser = authUser
                         if (repository != null && currentUser != null) {
-                            exchangeCard(
-                                cardRepository = repository,
-                                currentUid = currentUser.uid,
-                                currentCardId = card.id,
-                                partnerCardId = partnerCardId,
-                            )
-                            effectiveUserViewModel?.reloadCurrentUser()
+                            runCatching {
+                                exchangeCard(
+                                    cardRepository = repository,
+                                    currentUid = currentUser.uid,
+                                    currentCardId = card.id,
+                                    partnerCardId = partnerCardId,
+                                )
+                            }.onSuccess {
+                                navController.popBackStack()
+                                effectiveUserViewModel?.reloadCurrentUser()
+                            }.onFailure { throwable ->
+                                effectiveUserViewModel?.setErrorMessage(
+                                    throwable.message ?: "名刺交換に失敗しました。",
+                                )
+                            }
                         }
                     },
                     onBackClick = {

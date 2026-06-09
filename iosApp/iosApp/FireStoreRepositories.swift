@@ -1,11 +1,12 @@
+import FirebaseCore
 import FirebaseFirestore
 import Shared
 
 final class FireStoreCardRepository: CardRepository {
     private let cards: CollectionReference
 
-    init(firestore: Firestore = Firestore.firestore()) {
-        self.cards = firestore.collection(Self.cardsCollection)
+    init(firestore: Firestore? = nil) {
+        self.cards = Self.resolveFirestore(firestore).collection(Self.cardsCollection)
     }
 
     func addCard(card: CardEntity) async throws -> CardEntity {
@@ -70,6 +71,7 @@ final class FireStoreCardRepository: CardRepository {
             "bgFile": card.bgFile,
             "createdAt": card.createdAt,
             "updatedAt": card.updatedAt,
+            "accounts": card.accounts.map(accountDictionary),
             "partnerIds": card.partnerIds,
         ]
     }
@@ -90,6 +92,7 @@ final class FireStoreCardRepository: CardRepository {
             bgFile: card.bgFile,
             createdAt: card.createdAt,
             updatedAt: card.updatedAt,
+            accounts: card.accounts,
             partnerIds: card.partnerIds
         )
     }
@@ -110,18 +113,28 @@ final class FireStoreCardRepository: CardRepository {
             bgFile: data["bgFile"] as? String ?? "",
             createdAt: int64Value(data["createdAt"]),
             updatedAt: int64Value(data["updatedAt"]),
+            accounts: accountsValue(data["accounts"]),
             partnerIds: data["partnerIds"] as? [String] ?? []
         )
     }
 
     private static let cardsCollection = "cards"
+    private static func resolveFirestore(_ firestore: Firestore?) -> Firestore {
+        if let firestore {
+            return firestore
+        }
+        guard FirebaseApp.app() != nil else {
+            fatalError("FirebaseApp is not configured. Call FirebaseApp.configure() before creating FireStoreCardRepository.")
+        }
+        return Firestore.firestore()
+    }
 }
 
 final class FireStoreUserRepository: UserRepository {
     private let users: CollectionReference
 
-    init(firestore: Firestore = Firestore.firestore()) {
-        self.users = firestore.collection(Self.usersCollection)
+    init(firestore: Firestore? = nil) {
+        self.users = Self.resolveFirestore(firestore).collection(Self.usersCollection)
     }
 
     func addUser(user: UserEntity) async throws -> UserEntity {
@@ -156,6 +169,7 @@ final class FireStoreUserRepository: UserRepository {
             "id": user.id,
             "createdAt": user.createdAt,
             "updatedAt": user.updatedAt,
+            "accounts": user.accounts.map(accountDictionary),
             "cardIds": user.cardIds,
         ]
     }
@@ -165,6 +179,7 @@ final class FireStoreUserRepository: UserRepository {
             id: id,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+            accounts: user.accounts,
             cardIds: cardIds
         )
     }
@@ -174,11 +189,21 @@ final class FireStoreUserRepository: UserRepository {
             id: data["id"] as? String ?? id,
             createdAt: int64Value(data["createdAt"]),
             updatedAt: int64Value(data["updatedAt"]),
+            accounts: accountsValue(data["accounts"]),
             cardIds: data["cardIds"] as? [String] ?? []
         )
     }
 
     private static let usersCollection = "users"
+    private static func resolveFirestore(_ firestore: Firestore?) -> Firestore {
+        if let firestore {
+            return firestore
+        }
+        guard FirebaseApp.app() != nil else {
+            fatalError("FirebaseApp is not configured. Call FirebaseApp.configure() before creating FireStoreUserRepository.")
+        }
+        return Firestore.firestore()
+    }
 }
 
 private enum RepositoryError: LocalizedError {
@@ -261,6 +286,47 @@ private func cardElement(
         fontSize: shouldInitializeLayout ? fontSize : resolvedFontSize
     )
 }
+
+private func accountDictionary(account: Account) -> [String: Any] {
+    [
+        "service": account.service,
+        "userId": account.userId,
+        "userUrl": account.userUrl,
+    ]
+}
+
+private func accountsValue(_ value: Any?) -> [Account] {
+    (value as? [[String: Any]] ?? [])
+        .compactMap { accountValue in
+            accountValue.toSharedAccount()
+        }
+}
+
+private extension Dictionary where Key == String, Value == Any {
+    func toSharedAccount() -> Account? {
+        let service = self["service"] as? String ?? ""
+        let userId = self["userId"] as? String ?? ""
+        let userUrl = self["userUrl"] as? String ?? ""
+
+        switch service.lowercased() {
+        case "facebook":
+            return Account.Facebook(service: service, userId: userId, userUrl: userUrl)
+        case "x", "twitter":
+            return Account.X(service: service, userId: userId, userUrl: userUrl)
+        case "google":
+            return Account.Google(service: service, userId: userId)
+        case "github":
+            return Account.Github(service: service, userId: userId, userUrl: userUrl)
+        case "instagram":
+            return Account.Instagram(service: service, userId: userId, userUrl: userUrl)
+        case "qiita":
+            return Account.Qiita(service: service, userId: userId, userUrl: userUrl)
+        default:
+            return nil
+        }
+    }
+}
+
 
 private func floatValue(_ value: Any?, defaultValue: Float) -> Float {
     switch value {

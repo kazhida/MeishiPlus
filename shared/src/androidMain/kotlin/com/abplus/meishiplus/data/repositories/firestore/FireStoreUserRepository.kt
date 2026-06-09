@@ -1,9 +1,9 @@
 package com.abplus.meishiplus.data.repositories.firestore
 
-import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.data.repositories.UserRepository
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -16,7 +16,7 @@ class FireStoreUserRepository(
         val userId = user.id.ifBlank { users.document().id }
         val userWithId = user.copy(id = userId)
         users.document(userId)
-            .set(userWithId)
+            .set(userWithId.toMap(), SetOptions.merge())
             .await()
         return userWithId
     }
@@ -25,12 +25,12 @@ class FireStoreUserRepository(
         users.document(id)
             .get()
             .await()
-            .toObject(UserEntity::class.java)
+            .toUserEntity()
             ?: error("User not found: $id")
 
     override suspend fun saveUser(user: UserEntity) {
         users.document(user.id)
-            .set(user)
+            .set(user.toMap(), SetOptions.merge())
             .await()
     }
 
@@ -66,13 +66,21 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toUserEntity(): UserE
 }
 
 private fun UserEntity.toMap(): Map<String, Any?> =
-    mapOf(
-        "id" to id,
-        "createdAt" to createdAt,
-        "updatedAt" to updatedAt,
-        "accounts" to accounts.map { it.toMap() },
-        "cardIds" to cardIds,
-    )
+    buildMap {
+        put("id", id)
+        if (createdAt != 0L) {
+            put("createdAt", createdAt)
+        }
+        if (updatedAt != 0L) {
+            put("updatedAt", updatedAt)
+        }
+        if (accounts.isNotEmpty()) {
+            put("accounts", accounts.map { it.toMap() })
+        }
+        if (cardIds.isNotEmpty()) {
+            put("cardIds", cardIds)
+        }
+    }
 
 private fun Account.toMap(): Map<String, String> =
     mapOf(

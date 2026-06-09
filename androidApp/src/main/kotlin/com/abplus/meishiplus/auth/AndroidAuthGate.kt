@@ -40,6 +40,7 @@ import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.exceptions.NoCredentialException
 import com.abplus.meishiplus.App
 import com.abplus.meishiplus.data.entities.UserEntity
+import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
 import com.abplus.meishiplus.auth.resolveSnsAuthService
@@ -129,8 +130,13 @@ fun AndroidAuthGate(
                         accounts = currentUser.accounts.upsertAccount(account),
                     )
                     userRepository.saveUser(updatedUser)
+                    userViewModel.setAppUser(
+                        AppUser(
+                            user = updatedUser,
+                            cards = uiState.appUser?.cards.orEmpty(),
+                        ),
+                    )
                 }.onSuccess {
-                    userViewModel.reloadCurrentUser()
                     deepLinkUri.value = null
                 }.onFailure { throwable ->
                     val errorMessage = if (

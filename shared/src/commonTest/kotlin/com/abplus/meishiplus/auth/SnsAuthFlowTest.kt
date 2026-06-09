@@ -44,6 +44,11 @@ class SnsAuthFlowTest {
     }
 
     @Test
+    fun qiitaRedirectUri_matchesAndroidIntentFilter() {
+        assertEquals("mspls://qiita", QiitaAuth.DEFAULT_REDIRECT_URI)
+    }
+
+    @Test
     fun resolve_returnsMissingService_whenServiceIsBlank() {
         val outcome = SnsAuthRedirect(
             service = null,

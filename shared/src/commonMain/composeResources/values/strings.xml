@@ -1,0 +1,7 @@
+<resources>
+    <string name="sns_auth_failed">SNS認証に失敗しました。</string>
+    <string name="sns_auth_invalid_redirect">SNS認証の戻り先を判定できませんでした。</string>
+    <string name="sns_auth_missing_code">SNS認証の code が見つかりませんでした。</string>
+    <string name="sns_auth_reflect_failed">SNS認証の反映に失敗しました。</string>
+    <string name="sns_auth_unsupported_service">未対応のSNSサービスです。</string>
+</resources>

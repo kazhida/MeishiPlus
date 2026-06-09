@@ -150,5 +150,5 @@ object QiitaAuth {
     private const val QIITA_WEB_BASE_URL = "https://qiita.com"
     private const val SERVICE = "qiita"
     private const val DEFAULT_SCOPE = "read_qiita"
-    const val DEFAULT_REDIRECT_URI = "mspls://qiiita"
+    const val DEFAULT_REDIRECT_URI = "mspls://qiita"
 }

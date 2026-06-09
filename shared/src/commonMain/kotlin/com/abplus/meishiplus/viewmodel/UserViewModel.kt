@@ -13,6 +13,7 @@ import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.usecase.UserInit
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -127,7 +128,7 @@ class UserViewModel(
     fun updateCardAndReloadUser(card: CardEntity) {
         val authUser = _uiState.value.authUser ?: return
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -160,7 +161,7 @@ class UserViewModel(
     fun reloadCurrentUser() {
         val authUser = _uiState.value.authUser ?: return
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -189,6 +190,16 @@ class UserViewModel(
         }
     }
 
+    fun setAppUser(appUser: AppUser) {
+        _uiState.update {
+            it.copy(
+                appUser = appUser,
+                isLoading = false,
+                errorMessage = null,
+            )
+        }
+    }
+
     fun setErrorMessage(message: String?) {
         _uiState.update { state ->
             state.copy(errorMessage = message)
@@ -196,7 +207,7 @@ class UserViewModel(
     }
 
     private fun loadAppUser(authUser: AuthUser) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isLoading = true,

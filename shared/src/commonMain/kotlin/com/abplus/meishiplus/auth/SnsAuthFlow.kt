@@ -1,6 +1,7 @@
 package com.abplus.meishiplus.auth
 
 import com.abplus.meishiplus.data.model.Account
+import kotlinx.coroutines.flow.MutableStateFlow
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.sns_auth_failed
 import meishiplus.shared.generated.resources.sns_auth_invalid_redirect
@@ -32,12 +33,67 @@ data class SnsAuthRedirect(
         }
 }
 
+object SnsAuthDeepLinkState {
+    val pendingUrl = MutableStateFlow<String?>(null)
+
+    fun submit(url: String?) {
+        pendingUrl.value = url
+    }
+
+    fun clear() {
+        pendingUrl.value = null
+    }
+}
+
 fun resolveSnsAuthService(
     host: String?,
     pathSegments: List<String>,
 ): String? =
     host?.takeIf { it.isNotBlank() }?.lowercase()
         ?: pathSegments.firstOrNull()?.takeIf { it.isNotBlank() }?.lowercase()
+
+fun parseSnsAuthRedirect(url: String): SnsAuthRedirect? {
+    val schemeIndex = url.indexOf("://")
+    if (schemeIndex < 0) return null
+
+    val remainder = url.substring(schemeIndex + 3)
+    val queryIndex = remainder.indexOf('?')
+    val authorityAndPath = if (queryIndex >= 0) {
+        remainder.substring(0, queryIndex)
+    } else {
+        remainder
+    }
+    val queryString = if (queryIndex >= 0) {
+        remainder.substring(queryIndex + 1)
+    } else {
+        ""
+    }
+
+    val authorityParts = authorityAndPath
+        .split('/')
+        .filter { it.isNotBlank() }
+    val service = resolveSnsAuthService(
+        host = authorityParts.firstOrNull(),
+        pathSegments = authorityParts.drop(1),
+    )
+
+    val queryParams = queryString
+        .split('&')
+        .mapNotNull { entry ->
+            val separatorIndex = entry.indexOf('=')
+            if (separatorIndex <= 0) return@mapNotNull null
+            entry.substring(0, separatorIndex) to entry.substring(separatorIndex + 1)
+        }
+        .toMap()
+
+    return SnsAuthRedirect(
+        service = service,
+        code = queryParams["code"],
+        state = queryParams["state"],
+        error = queryParams["error"],
+        errorDescription = queryParams["error_description"] ?: queryParams["error_reason"],
+    )
+}
 
 fun List<Account>.upsertAccount(account: Account): List<Account> {
     val service = account.service.lowercase()

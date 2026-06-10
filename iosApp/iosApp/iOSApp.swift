@@ -1,5 +1,6 @@
 import FirebaseCore
 import GoogleSignIn
+import Shared
 import SwiftUI
 
 @main
@@ -15,7 +16,10 @@ struct iOSApp: App {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
-                    GIDSignIn.sharedInstance.handle(url)
+                    if GIDSignIn.sharedInstance.handle(url) {
+                        return
+                    }
+                    SnsAuthDeepLinkState.shared.submit(url: url.absoluteString)
                 }
         }
     }

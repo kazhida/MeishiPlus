@@ -72,11 +72,17 @@ function redirectToApp() {
   const deepLink = buildDeepLink(service, window.location.search);
   openAppLink.href = deepLink;
   openAppLink.hidden = false;
-  setMessage('名刺+ アプリに戻ります。', '自動で開かない場合はボタンを押してください。');
-
-  window.setTimeout(() => {
-    window.location.assign(deepLink);
-  }, 100);
+  setMessage('名刺+ アプリを開いてください。', 'Facebook 内ブラウザでは自動起動が失敗することがあります。');
 }
 
-redirectToApp();
+if (typeof window !== 'undefined') {
+  redirectToApp();
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    buildDeepLink,
+    redirectToApp,
+    serviceFromLocation,
+  };
+}

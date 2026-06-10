@@ -92,7 +92,7 @@ describe('redirectToApp', () => {
     assert.equal(elements.openAppLink.hidden, true);
   });
 
-  it('sets the app link and redirects to the deep link', () => {
+  it('sets the app link without forcing automatic navigation', () => {
     const { assignedUrls, elements } = installBrowserMocks({
       pathname: '/x',
       search: '?code=abc&state=xyz',
@@ -102,7 +102,7 @@ describe('redirectToApp', () => {
 
     assert.equal(elements.openAppLink.href, 'mspls://x?code=abc&state=xyz');
     assert.equal(elements.openAppLink.hidden, false);
-    assert.deepEqual(assignedUrls, ['mspls://x?code=abc&state=xyz']);
+    assert.deepEqual(assignedUrls, []);
   });
 });
 

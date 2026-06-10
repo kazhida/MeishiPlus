@@ -290,7 +290,7 @@ private func cardElement(
 private func accountDictionary(account: Account) -> [String: Any] {
     var dictionary: [String: Any] = [
         "service": account.service,
-        "userId": account.userId,
+        "userId": account.userName,
         "userUrl": account.userUrl,
     ]
     if let account = account as? Account.X, let displayName = account.displayName {
@@ -314,17 +314,17 @@ private extension Dictionary where Key == String, Value == Any {
 
         switch service.lowercased() {
         case "facebook":
-            return Account.Facebook(service: service, userId: userId, userUrl: userUrl)
+            return Account.Facebook(service: service, userName: userId, userUrl: userUrl)
         case "x", "twitter":
-            return Account.X(service: service, userId: userId, userUrl: userUrl, displayName: self["displayName"] as? String)
+            return Account.X(service: service, userName: userId, userUrl: userUrl, displayName: self["displayName"] as? String)
         case "google":
-            return Account.Google(service: service, userId: userId)
+            return Account.Google(service: service, userName: userId)
         case "github":
-            return Account.Github(service: service, userId: userId, userUrl: userUrl)
+            return Account.Github(service: service, userName: userId, userUrl: userUrl)
         case "instagram":
-            return Account.Instagram(service: service, userId: userId, userUrl: userUrl)
+            return Account.Instagram(service: service, userName: userId, userUrl: userUrl)
         case "qiita":
-            return Account.Qiita(service: service, userId: userId, userUrl: userUrl)
+            return Account.Qiita(service: service, userName: userId, userUrl: userUrl)
         default:
             return nil
         }

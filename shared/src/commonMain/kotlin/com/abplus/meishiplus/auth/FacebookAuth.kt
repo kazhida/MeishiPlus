@@ -130,10 +130,13 @@ object FacebookAuth {
         getString(Res.string.facebook_client_secret)
 
     suspend fun redirectUri(): String =
-        "${getString(Res.string.redirect_server)}/facebook"
+        buildRedirectUri(getString(Res.string.redirect_server))
 
     private suspend fun defaultRedirectUri(): String =
         redirectUri()
+
+    internal fun buildRedirectUri(serverUrl: String): String =
+        "${serverUrl.trimEnd('/')}/facebook"
 
     @Serializable
     private data class AccessTokenResponse(
@@ -147,7 +150,7 @@ object FacebookAuth {
         val name: String? = null,
     )
 
-    private const val GRAPH_API_VERSION = "v23.0"
+    private const val GRAPH_API_VERSION = "v25.0"
     private const val GRAPH_API_BASE_URL = "https://graph.facebook.com"
     private const val FACEBOOK_WEB_BASE_URL = "https://www.facebook.com"
     private const val SERVICE = "facebook"

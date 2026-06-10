@@ -2,7 +2,6 @@ package com.abplus.meishiplus.auth
 
 import android.app.Activity
 import android.content.Context
-import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,7 +49,6 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.tasks.await
 
 @Composable
@@ -58,13 +56,11 @@ fun AndroidAuthGate(
     userViewModel: UserViewModel,
     userRepository: UserRepository,
     cardRepository: CardRepository,
-    deepLinkUri: MutableStateFlow<Uri?>,
 ) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val credentialManager = remember { CredentialManager.create(context) }
     val uiState by userViewModel.uiState.collectAsState()
-    val pendingDeepLink by deepLinkUri.collectAsState()
 
     DisposableEffect(auth, userViewModel) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -73,77 +69,6 @@ fun AndroidAuthGate(
         auth.addAuthStateListener(listener)
         onDispose {
             auth.removeAuthStateListener(listener)
-        }
-    }
-
-    LaunchedEffect(pendingDeepLink, uiState.authUser?.uid, uiState.isLoading) {
-        val uri = pendingDeepLink ?: return@LaunchedEffect
-        val authUser = uiState.authUser ?: return@LaunchedEffect
-        when (
-            val outcome = SnsAuthRedirect(
-                service = resolveSnsAuthService(uri.host, uri.pathSegments),
-                code = uri.getQueryParameter("code"),
-                state = uri.getQueryParameter("state"),
-                error = uri.getQueryParameter("error"),
-                errorDescription = uri.getQueryParameter("error_description")
-                    ?: uri.getQueryParameter("error_reason"),
-            ).resolve()
-        ) {
-            SnsAuthRedirectOutcome.MissingService -> {
-                userViewModel.setErrorMessage(snsAuthInvalidRedirectMessage())
-                deepLinkUri.value = null
-                return@LaunchedEffect
-            }
-            SnsAuthRedirectOutcome.MissingCode -> {
-                userViewModel.setErrorMessage(snsAuthMissingCodeMessage())
-                deepLinkUri.value = null
-                return@LaunchedEffect
-            }
-            is SnsAuthRedirectOutcome.Failure -> {
-                userViewModel.setErrorMessage(snsAuthFailedMessage(outcome.error, outcome.description))
-                deepLinkUri.value = null
-                return@LaunchedEffect
-            }
-            is SnsAuthRedirectOutcome.Success -> {
-                if (uiState.isLoading) return@LaunchedEffect
-
-                userViewModel.setErrorMessage(null)
-                runCatching {
-                    val account = authenticateSnsAccount(
-                        service = outcome.service,
-                        code = outcome.code,
-                        state = outcome.state,
-                    )
-                    val currentUser = runCatching {
-                        userRepository.getUser(authUser.uid)
-                    }.getOrElse {
-                        UserEntity(id = authUser.uid)
-                    }
-                    val updatedUser = currentUser.copy(
-                        accounts = currentUser.accounts.upsertAccount(account),
-                    )
-                    userRepository.saveUser(updatedUser)
-                    userViewModel.setAppUser(
-                        AppUser(
-                            user = updatedUser,
-                            cards = uiState.appUser?.cards.orEmpty(),
-                        ),
-                    )
-                }.onSuccess {
-                    deepLinkUri.value = null
-                }.onFailure { throwable ->
-                    val errorMessage = if (
-                        throwable is IllegalStateException &&
-                        throwable.message?.startsWith("未対応のSNSサービスです") == true
-                    ) {
-                        snsAuthUnsupportedServiceMessage()
-                    } else {
-                        throwable.message ?: snsAuthReflectFailedMessage()
-                    }
-                    userViewModel.setErrorMessage(errorMessage)
-                    deepLinkUri.value = null
-                }
-            }
         }
     }
 

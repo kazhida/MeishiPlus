@@ -87,11 +87,11 @@ fun SnsAuthScreen(
             icon = Res.drawable.ic_sns_facebook,
             account = userEntity.accounts.firstOrNull { it is Account.Facebook || it.service == "facebook" },
         ),
-        SnsAccountItemSpec(
-            serviceName = "Instagram",
-            icon = Res.drawable.ic_sns_instagram,
-            account = userEntity.accounts.firstOrNull { it is Account.Instagram || it.service == "instagram" },
-        ),
+//        SnsAccountItemSpec(
+//            serviceName = "Instagram",
+//            icon = Res.drawable.ic_sns_instagram,
+//            account = userEntity.accounts.firstOrNull { it is Account.Instagram || it.service == "instagram" },
+//        ),
     )
 
     Scaffold(

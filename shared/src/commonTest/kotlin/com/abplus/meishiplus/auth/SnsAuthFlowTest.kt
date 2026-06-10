@@ -57,6 +57,18 @@ class SnsAuthFlowTest {
     }
 
     @Test
+    fun parseSnsAuthRedirect_extractsFacebookRedirectData() {
+        val redirect = parseSnsAuthRedirect(
+            "mspls://facebook?code=code-123&state=state-1",
+        )
+
+        val success = assertIs<SnsAuthRedirectOutcome.Success>(redirect?.resolve())
+        assertEquals("facebook", success.service)
+        assertEquals("code-123", success.code)
+        assertEquals("state-1", success.state)
+    }
+
+    @Test
     fun xPkceChallenge_matchesRfc7636Example() {
         val verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
         assertEquals(

@@ -15,6 +15,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.abplus.meishiplus.auth.AuthUser
+import com.abplus.meishiplus.auth.DefaultSnsAccountAuthenticator
+import com.abplus.meishiplus.auth.SnsAuthDeepLinkState
+import com.abplus.meishiplus.auth.SnsAuthRedirectOutcome
+import com.abplus.meishiplus.auth.parseSnsAuthRedirect
+import com.abplus.meishiplus.auth.authenticateSnsAccount
+import com.abplus.meishiplus.auth.snsAuthFailedMessage
+import com.abplus.meishiplus.auth.snsAuthInvalidRedirectMessage
+import com.abplus.meishiplus.auth.snsAuthMissingCodeMessage
+import com.abplus.meishiplus.auth.snsAuthReflectFailedMessage
+import com.abplus.meishiplus.auth.snsAuthUnsupportedServiceMessage
 import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.model.AppUser
@@ -58,9 +68,86 @@ fun App(
     }
     val effectiveUserViewModel = userViewModel ?: ownedUserViewModel
     val userState by (effectiveUserViewModel?.uiState ?: fallbackUserState).collectAsState()
+    val pendingDeepLink by SnsAuthDeepLinkState.pendingUrl.collectAsState()
 
     LaunchedEffect(effectiveUserViewModel, authUser?.uid) {
         effectiveUserViewModel?.setAuthUser(authUser)
+    }
+
+    LaunchedEffect(
+        pendingDeepLink,
+        effectiveUserViewModel,
+        authUser?.uid,
+        userState.isLoading,
+    ) {
+        val deepLink = pendingDeepLink ?: return@LaunchedEffect
+        val currentAuthUser = authUser ?: return@LaunchedEffect
+        val repository = userRepository ?: return@LaunchedEffect
+        val viewModel = effectiveUserViewModel ?: return@LaunchedEffect
+        if (userState.isLoading) return@LaunchedEffect
+
+        val redirect = parseSnsAuthRedirect(deepLink) ?: run {
+            viewModel.setErrorMessage(snsAuthInvalidRedirectMessage())
+            SnsAuthDeepLinkState.clear()
+            return@LaunchedEffect
+        }
+
+        when (val outcome = redirect.resolve()) {
+            SnsAuthRedirectOutcome.MissingService -> {
+                viewModel.setErrorMessage(snsAuthInvalidRedirectMessage())
+                SnsAuthDeepLinkState.clear()
+                return@LaunchedEffect
+            }
+            SnsAuthRedirectOutcome.MissingCode -> {
+                viewModel.setErrorMessage(snsAuthMissingCodeMessage())
+                SnsAuthDeepLinkState.clear()
+                return@LaunchedEffect
+            }
+            is SnsAuthRedirectOutcome.Failure -> {
+                viewModel.setErrorMessage(snsAuthFailedMessage(outcome.error, outcome.description))
+                SnsAuthDeepLinkState.clear()
+                return@LaunchedEffect
+            }
+            is SnsAuthRedirectOutcome.Success -> {
+                viewModel.setErrorMessage(null)
+                runCatching {
+                    val account = authenticateSnsAccount(
+                        service = outcome.service,
+                        code = outcome.code,
+                        state = outcome.state,
+                        authenticator = DefaultSnsAccountAuthenticator,
+                    )
+                    val currentUser = runCatching {
+                        repository.getUser(currentAuthUser.uid)
+                    }.getOrElse {
+                        UserEntity(id = currentAuthUser.uid)
+                    }
+                    val updatedUser = currentUser.copy(
+                        accounts = currentUser.accounts.filterNot {
+                            it.service.lowercase() == account.service.lowercase()
+                        } + account,
+                    )
+                    repository.saveUser(updatedUser)
+                    viewModel.setAppUser(
+                        AppUser(
+                            user = updatedUser,
+                            cards = userState.appUser?.cards.orEmpty(),
+                        ),
+                    )
+                }.onFailure { throwable ->
+                    val errorMessage = if (
+                        throwable is IllegalStateException &&
+                        throwable.message?.startsWith("未対応のSNSサービスです") == true
+                    ) {
+                        snsAuthUnsupportedServiceMessage()
+                    } else {
+                        throwable.message ?: snsAuthReflectFailedMessage()
+                    }
+                    viewModel.setErrorMessage(errorMessage)
+                }
+                SnsAuthDeepLinkState.clear()
+            }
+        }
     }
 
     val effectiveAppUser = appUser ?: userState.appUser

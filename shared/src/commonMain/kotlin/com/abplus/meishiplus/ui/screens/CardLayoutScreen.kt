@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.ui.components.CardLayout
 import meishiplus.shared.generated.resources.Res
-import meishiplus.shared.generated.resources.ic_home
+import meishiplus.shared.generated.resources.ic_back
 import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,7 +39,7 @@ fun CardLayoutScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_home),
+                            painter = painterResource(Res.drawable.ic_back),
                             contentDescription = "戻る",
                         )
                     }

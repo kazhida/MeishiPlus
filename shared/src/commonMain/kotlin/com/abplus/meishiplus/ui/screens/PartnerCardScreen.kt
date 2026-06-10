@@ -35,7 +35,7 @@ import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.ui.components.CardItem
 import meishiplus.shared.generated.resources.Res
-import meishiplus.shared.generated.resources.ic_home
+import meishiplus.shared.generated.resources.ic_back
 import meishiplus.shared.generated.resources.ic_sns_facebook
 import meishiplus.shared.generated.resources.ic_sns_github
 import meishiplus.shared.generated.resources.ic_sns_google
@@ -67,7 +67,7 @@ fun PartnerCardScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_home),
+                            painter = painterResource(Res.drawable.ic_back),
                             contentDescription = "戻る",
                         )
                     }

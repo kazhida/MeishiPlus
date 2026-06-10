@@ -37,7 +37,7 @@ import com.abplus.meishiplus.pdf.createA4CardPdf
 import com.abplus.meishiplus.pdf.createPostcardCardPdf
 import kotlinx.coroutines.launch
 import meishiplus.shared.generated.resources.Res
-import meishiplus.shared.generated.resources.ic_home
+import meishiplus.shared.generated.resources.ic_back
 import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,7 +68,7 @@ fun CardPrintScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_home),
+                            painter = painterResource(Res.drawable.ic_back),
                             contentDescription = "戻る",
                         )
                     }

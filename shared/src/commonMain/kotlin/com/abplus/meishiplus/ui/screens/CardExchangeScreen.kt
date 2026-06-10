@@ -46,7 +46,7 @@ import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import meishiplus.shared.generated.resources.Res
-import meishiplus.shared.generated.resources.ic_home
+import meishiplus.shared.generated.resources.ic_back
 import org.ncgroup.kscan.BarcodeFormat
 import org.ncgroup.kscan.BarcodeResult
 import org.ncgroup.kscan.ScannerView
@@ -80,7 +80,7 @@ fun CardExchangeScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_home),
+                            painter = painterResource(Res.drawable.ic_back),
                             contentDescription = "戻る",
                         )
                     }

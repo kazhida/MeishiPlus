@@ -44,7 +44,7 @@ import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.model.Account
 import kotlinx.coroutines.launch
 import meishiplus.shared.generated.resources.Res
-import meishiplus.shared.generated.resources.ic_home
+import meishiplus.shared.generated.resources.ic_back
 import meishiplus.shared.generated.resources.ic_sns_facebook
 import meishiplus.shared.generated.resources.ic_sns_github
 import meishiplus.shared.generated.resources.ic_sns_instagram
@@ -109,7 +109,7 @@ fun SnsAuthScreen(
                         onClick = onBackClick,
                     ) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_home),
+                            painter = painterResource(Res.drawable.ic_back),
                             contentDescription = "戻る",
                         )
                     }

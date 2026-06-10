@@ -71,6 +71,7 @@ final class FireStoreCardRepository: CardRepository {
             "bgFile": card.bgFile,
             "createdAt": card.createdAt,
             "updatedAt": card.updatedAt,
+            "remark": card.remark,
             "accounts": card.accounts.map(accountDictionary),
             "partnerIds": card.partnerIds,
         ]
@@ -92,6 +93,7 @@ final class FireStoreCardRepository: CardRepository {
             bgFile: card.bgFile,
             createdAt: card.createdAt,
             updatedAt: card.updatedAt,
+            remark: card.remark,
             accounts: card.accounts,
             partnerIds: card.partnerIds
         )
@@ -113,6 +115,7 @@ final class FireStoreCardRepository: CardRepository {
             bgFile: data["bgFile"] as? String ?? "",
             createdAt: int64Value(data["createdAt"]),
             updatedAt: int64Value(data["updatedAt"]),
+            remark: data["remark"] as? String ?? "",
             accounts: accountsValue(data["accounts"]),
             partnerIds: data["partnerIds"] as? [String] ?? []
         )

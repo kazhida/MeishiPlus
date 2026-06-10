@@ -1,6 +1,7 @@
 package com.abplus.meishiplus
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -8,8 +9,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -37,6 +43,7 @@ import com.abplus.meishiplus.ui.screens.CardExchangeScreen
 import com.abplus.meishiplus.ui.screens.CardLayoutScreen
 import com.abplus.meishiplus.ui.screens.CardPreviewScreen
 import com.abplus.meishiplus.ui.screens.CardPrintScreen
+import com.abplus.meishiplus.ui.screens.PartnerCardScreen
 import com.abplus.meishiplus.ui.screens.SnsAuthScreen
 import com.abplus.meishiplus.ui.screens.TabPagerScreen
 import com.abplus.meishiplus.viewmodel.UserUiState
@@ -185,6 +192,9 @@ fun App(
                     onPreviewCard = { cardIndex ->
                         navController.navigate(CardPreviewRoute(cardIndex))
                     },
+                    onPreviewPartnerCard = { card ->
+                        navController.navigate(PartnerCardRoute(card.id))
+                    },
                     onSnsAuthClick = {
                         if (authUser != null) {
                             navController.navigate(SnsAuthRoute) {
@@ -244,6 +254,7 @@ fun App(
                 }
                 CardEntryScreen(
                     cardEntity = card,
+                    authenticatedAccounts = effectiveAppUser?.user?.accounts.orEmpty(),
                     onCardChange = { updatedCard ->
                         effectiveUserViewModel?.updateCard(cardIndex, updatedCard)
                     },
@@ -340,6 +351,47 @@ fun App(
                     },
                 )
             }
+            composable<PartnerCardRoute> { backStackEntry ->
+                val cardId = backStackEntry.toRoute<PartnerCardRoute>().cardId
+                val repository = cardRepository
+                val partnerCardState by produceState<PartnerCardScreenState>(
+                    initialValue = PartnerCardScreenState.Loading,
+                    cardId,
+                    repository,
+                ) {
+                    value = repository?.let {
+                        runCatching { it.getCard(cardId) }
+                            .fold(
+                                onSuccess = { card -> PartnerCardScreenState.Loaded(card) },
+                                onFailure = { PartnerCardScreenState.Error },
+                            )
+                    } ?: PartnerCardScreenState.Error
+                }
+                when (val state = partnerCardState) {
+                    PartnerCardScreenState.Loading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("読み込み中")
+                        }
+                    }
+                    PartnerCardScreenState.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("名刺を読み込めませんでした")
+                        }
+                    }
+                    is PartnerCardScreenState.Loaded -> {
+                        PartnerCardScreen(
+                            cardEntity = state.cardEntity,
+                            onBackClick = { navController.popBackStack() },
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -364,3 +416,12 @@ private data class CardPreviewRoute(val cardIndex: Int)
 
 @Serializable
 private data class CardExchangeRoute(val cardIndex: Int)
+
+@Serializable
+private data class PartnerCardRoute(val cardId: String)
+
+private sealed interface PartnerCardScreenState {
+    data object Loading : PartnerCardScreenState
+    data object Error : PartnerCardScreenState
+    data class Loaded(val cardEntity: CardEntity) : PartnerCardScreenState
+}

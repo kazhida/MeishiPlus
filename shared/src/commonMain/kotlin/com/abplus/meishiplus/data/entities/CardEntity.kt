@@ -20,6 +20,7 @@ data class CardEntity(
     val bgFile: String = "",
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    val remark: String = "",
     val accounts: List<Account> = emptyList(),
     val partnerIds: List<String> = emptyList()
 ) {

@@ -223,51 +223,40 @@ fun TabPagerScreen(
                         userScrollEnabled = isInteractionEnabled,
                         modifier = Modifier.fillMaxSize(),
                     ) { page ->
-                        if (errorMessage != null) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = errorMessage,
-                                    color = MaterialTheme.colorScheme.error,
+                        PullToRefreshBox(
+                            isRefreshing = isRefreshing,
+                            onRefresh = onRefresh,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                TabPage(
+                                    title = tabs[page],
+                                    cardIndex = page,
+                                    cardEntity = cards.getOrNull(page),
+                                    errorMessage = errorMessage,
+                                    cards = cards,
+                                    cardRepository = cardRepository,
+                                    onPreviewCard = onPreviewCard,
+                                    onPreviewPartnerCard = onPreviewPartnerCard,
+                                    modifier = Modifier.fillMaxSize(),
                                 )
-                            }
-                        } else {
-                            PullToRefreshBox(
-                                isRefreshing = isRefreshing,
-                                onRefresh = onRefresh,
-                                modifier = Modifier.fillMaxSize(),
-                            ) {
-                                Box(modifier = Modifier.fillMaxSize()) {
-                                    TabPage(
-                                        title = tabs[page],
-                                        cardIndex = page,
-                                        cardEntity = cards.getOrNull(page),
-                                        cards = cards,
-                                        cardRepository = cardRepository,
-                                        onPreviewCard = onPreviewCard,
-                                        onPreviewPartnerCard = onPreviewPartnerCard,
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
-                                    Box(
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(16.dp),
+                                ) {
+                                    CardItemActionMenu(
+                                        enabled = isInteractionEnabled,
+                                        onMenuClick = {},
+                                        onEditClick = { onEditCard(page) },
+                                        onLayoutClick = { onLayoutCard(page) },
+                                        onPrintClick = { onPrintCard(page) },
+                                        onSwapClick = { onExchangeCard(page) },
                                         modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(16.dp),
-                                    ) {
-                                        CardItemActionMenu(
-                                            enabled = isInteractionEnabled,
-                                            onMenuClick = {},
-                                            onEditClick = { onEditCard(page) },
-                                            onLayoutClick = { onLayoutCard(page) },
-                                            onPrintClick = { onPrintCard(page) },
-                                            onSwapClick = { onExchangeCard(page) },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .widthIn(max = 460.dp)
-                                                .wrapContentSize(Alignment.TopEnd),
-                                        )
-                                    }
+                                            .fillMaxWidth()
+                                            .widthIn(max = 460.dp)
+                                            .wrapContentSize(Alignment.TopEnd),
+                                    )
                                 }
                             }
                         }
@@ -295,6 +284,7 @@ private fun TabPage(
     title: String,
     cardIndex: Int,
     cardEntity: CardEntity?,
+    errorMessage: String?,
     cards: List<CardEntity>,
     cardRepository: CardRepository?,
     onPreviewCard: (Int) -> Unit,
@@ -347,6 +337,17 @@ private fun TabPage(
                 modifier = Modifier.fillMaxSize(),
                 onCardClick = { onPreviewCard(cardIndex) },
             )
+        }
+        if (errorMessage != null) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
         when {
             isPartnerCardsLoading -> {

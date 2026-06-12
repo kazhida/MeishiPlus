@@ -19,11 +19,11 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.abplua.meishiplus.MainKt"
+        mainClass = "com.abplus.meishiplus.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.abplua.meishiplus"
+            packageName = "com.abplus.meishiplus"
             packageVersion = "1.0.0"
         }
     }

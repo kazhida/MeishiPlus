@@ -17,10 +17,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,10 +36,10 @@ import androidx.credentials.exceptions.GetCredentialProviderConfigurationExcepti
 import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.exceptions.NoCredentialException
 import com.abplus.meishiplus.App
-import com.abplus.meishiplus.data.entities.UserEntity
-import com.abplus.meishiplus.data.model.AppUser
+import com.abplus.meishiplus.data.usecase.UserInit
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
+import com.abplus.meishiplus.purchase.AndroidCardPurchaseManager
 import com.abplus.meishiplus.viewmodel.UserViewModel
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
@@ -49,6 +49,9 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
 
 @Composable
@@ -60,6 +63,8 @@ fun AndroidAuthGate(
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val credentialManager = remember { CredentialManager.create(context) }
+    val purchaseManager = remember(context) { AndroidCardPurchaseManager(context) }
+    val coroutineScope = rememberCoroutineScope()
     val uiState by userViewModel.uiState.collectAsState()
 
     DisposableEffect(auth, userViewModel) {
@@ -96,6 +101,37 @@ fun AndroidAuthGate(
             userViewModel = userViewModel,
             userRepository = userRepository,
             cardRepository = cardRepository,
+            onPurchaseCardClick = { onSuccess ->
+                coroutineScope.launch {
+                    userViewModel.setPurchasing(true)
+                    runCatching {
+                        val activity = context as? Activity
+                            ?: error("購入にはActivityコンテキストが必要です。")
+                        when (val purchaseResult = purchaseManager.purchase(activity)) {
+                            AndroidCardPurchaseManager.PurchaseResult.Success -> {
+                                val currentUser = uiState.authUser
+                                    ?: error("購入対象のユーザーが見つかりません。")
+                                val appUser = withContext(Dispatchers.Default) {
+                                    UserInit(userRepository, cardRepository).purchaseAdditionalCard(currentUser)
+                                }
+                                userViewModel.setAppUser(appUser)
+                                onSuccess()
+                            }
+                            is AndroidCardPurchaseManager.PurchaseResult.Failure -> {
+                                userViewModel.setErrorMessage(
+                                    purchaseResult.message,
+                                )
+                            }
+                        }
+                    }.onFailure { throwable ->
+                        userViewModel.setErrorMessage(
+                            throwable.message ?: "アプリ内課金に失敗しました。",
+                        )
+                    }.also {
+                        userViewModel.setPurchasing(false)
+                    }
+                }
+            },
         )
         return
     }

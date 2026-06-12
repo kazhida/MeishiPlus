@@ -46,6 +46,37 @@ class UserInit(
         return AppUser(user = updatedUser, cards = createdCards)
     }
 
+    suspend fun purchaseAdditionalCard(authUser: AuthUser): AppUser {
+        val userEntity = runCatching {
+            userRepository.getUser(authUser.uid)
+        }.getOrElse {
+            userRepository.addUser(UserEntity(id = authUser.uid))
+        }
+
+        val cards = if (userEntity.cardIds.isNotEmpty()) {
+            cardRepository.getCards(userEntity.cardIds)
+        } else {
+            emptyList()
+        }
+        val sourceCard = cards.firstOrNull() ?: error("追加対象のカードがありません。")
+
+        val addedCard = cardRepository.addCard(
+            sourceCard.copy(
+                id = "",
+                ownerUid = authUser.uid,
+            ),
+        )
+        val updatedUser = userEntity.copy(
+            cardIds = userEntity.cardIds + addedCard.id,
+        )
+        userRepository.saveUser(updatedUser)
+
+        return AppUser(
+            user = updatedUser,
+            cards = cards + addedCard,
+        )
+    }
+
     private fun createDefaultCard(
         ownerUid: String,
         caption: String,

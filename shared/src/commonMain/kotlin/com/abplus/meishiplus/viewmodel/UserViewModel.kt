@@ -20,6 +20,7 @@ data class UserUiState(
     val appUser: AppUser? = null,
     val isAuthResolved: Boolean = false,
     val isLoading: Boolean = false,
+    val isPurchasing: Boolean = false,
     val errorMessage: String? = null,
 )
 
@@ -150,6 +151,44 @@ class UserViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun purchaseAdditionalCard() {
+        val authUser = _uiState.value.authUser ?: return
+
+        viewModelScope.launch(Dispatchers.Default) {
+            _uiState.update {
+                it.copy(
+                    isPurchasing = true,
+                    errorMessage = null,
+                )
+            }
+
+            runCatching {
+                userInit.purchaseAdditionalCard(authUser)
+            }.onSuccess { appUser ->
+                _uiState.update {
+                    it.copy(
+                        appUser = appUser,
+                        isPurchasing = false,
+                        errorMessage = null,
+                    )
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(
+                        isPurchasing = false,
+                        errorMessage = throwable.message ?: "カードを追加できませんでした。",
+                    )
+                }
+            }
+        }
+    }
+
+    fun setPurchasing(isPurchasing: Boolean) {
+        _uiState.update {
+            it.copy(isPurchasing = isPurchasing)
         }
     }
 

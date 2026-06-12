@@ -17,6 +17,7 @@ composeMultiplatform = "1.11.0"
 firebase-bom = "34.14.0"
 google-services = "4.4.4"
 play-services-auth = "21.6.0"
+billing = "9.0.0"
 googleid = "1.2.0"
 junit = "4.13.2"
 kotlin = "2.3.21"
@@ -58,6 +59,7 @@ firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 google-play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
+google-play-billing = { module = "com.android.billingclient:billing", version.ref = "billing" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }

@@ -28,6 +28,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(libs.google.play.billing)
     implementation(libs.kotlinx.coroutines.play.services)
 
     implementation(libs.compose.uiToolingPreview)
@@ -42,7 +43,7 @@ android {
         applicationId = "com.abplus.meishiplus"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 3
+        versionCode = 5
         versionName = "1.0.0"
     }
     packaging {

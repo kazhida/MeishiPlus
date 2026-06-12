@@ -38,6 +38,7 @@ import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
 import com.abplus.meishiplus.data.usecase.exchangeCard
 import com.abplus.meishiplus.data.usecase.UserInit
+import com.abplus.meishiplus.ui.screens.ChargeScreen
 import com.abplus.meishiplus.ui.screens.CardEntryScreen
 import com.abplus.meishiplus.ui.screens.CardExchangeScreen
 import com.abplus.meishiplus.ui.screens.CardLayoutScreen
@@ -61,6 +62,7 @@ fun App(
     userViewModel: UserViewModel? = null,
     userRepository: UserRepository? = null,
     cardRepository: CardRepository? = null,
+    onPurchaseCardClick: ((onSuccess: () -> Unit) -> Unit)? = null,
 ) {
     val fallbackUserState = remember { MutableStateFlow(UserUiState()) }
     val ownedUserViewModel = remember(userRepository, cardRepository) {
@@ -202,6 +204,11 @@ fun App(
                             }
                         }
                     },
+                    onChargeClick = {
+                        navController.navigate(ChargeRoute) {
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             composable<SnsAuthRoute> {
@@ -237,6 +244,17 @@ fun App(
                                 )
                             }
                         }
+                    },
+                )
+            }
+            composable<ChargeRoute> {
+                ChargeScreen(
+                    isPurchasing = userState.isPurchasing,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onPurchaseClick = { onSuccess ->
+                        onPurchaseCardClick?.invoke(onSuccess)
                     },
                 )
             }
@@ -397,28 +415,31 @@ fun App(
 }
 
 @Serializable
-private data object HomeRoute
+data object HomeRoute
 
 @Serializable
-private data object SnsAuthRoute
+data object SnsAuthRoute
 
 @Serializable
-private data class CardEntryRoute(val cardIndex: Int)
+data object ChargeRoute
 
 @Serializable
-private data class CardLayoutRoute(val cardIndex: Int)
+data class CardEntryRoute(val cardIndex: Int)
 
 @Serializable
-private data class CardPrintRoute(val cardIndex: Int)
+data class CardLayoutRoute(val cardIndex: Int)
 
 @Serializable
-private data class CardPreviewRoute(val cardIndex: Int)
+data class CardPrintRoute(val cardIndex: Int)
 
 @Serializable
-private data class CardExchangeRoute(val cardIndex: Int)
+data class CardPreviewRoute(val cardIndex: Int)
 
 @Serializable
-private data class PartnerCardRoute(val cardId: String)
+data class CardExchangeRoute(val cardIndex: Int)
+
+@Serializable
+data class PartnerCardRoute(val cardId: String)
 
 private sealed interface PartnerCardScreenState {
     data object Loading : PartnerCardScreenState

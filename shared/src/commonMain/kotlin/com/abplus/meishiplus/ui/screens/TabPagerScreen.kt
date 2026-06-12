@@ -58,6 +58,7 @@ import kotlinx.coroutines.launch
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.bg
 import meishiplus.shared.generated.resources.ic_badge
+import meishiplus.shared.generated.resources.ic_card_add
 import meishiplus.shared.generated.resources.ic_edit
 import meishiplus.shared.generated.resources.ic_home
 import meishiplus.shared.generated.resources.ic_layout
@@ -86,6 +87,7 @@ fun TabPagerScreen(
     onPreviewCard: (Int) -> Unit = {},
     onPreviewPartnerCard: (CardEntity) -> Unit = {},
     onSnsAuthClick: () -> Unit = {},
+    onChargeClick: () -> Unit = {},
 ) {
     val isInteractionEnabled = !isRefreshing
     val cards = appUser?.cards.orEmpty()
@@ -97,6 +99,7 @@ fun TabPagerScreen(
     val drawerItems = listOf(
         DrawerItem("ホーム", Res.drawable.ic_home, DrawerDestination.Home),
         DrawerItem("SNS認証", Res.drawable.ic_badge, DrawerDestination.SnsAuth),
+        DrawerItem("カード追加", Res.drawable.ic_card_add, DrawerDestination.AddCard),
         DrawerItem("設定", Res.drawable.ic_settings, DrawerDestination.Settings),
     )
     val pagerState = rememberPagerState(
@@ -128,6 +131,7 @@ fun TabPagerScreen(
                             if (!isInteractionEnabled) return@NavigationDrawerItem
                             when (item.destination) {
                                 DrawerDestination.SnsAuth -> onSnsAuthClick()
+                                DrawerDestination.AddCard -> onChargeClick()
                                 DrawerDestination.Home,
                                 DrawerDestination.Settings -> {
                                     coroutineScope.launch {
@@ -276,6 +280,7 @@ private data class DrawerItem(
 private enum class DrawerDestination {
     Home,
     SnsAuth,
+    AddCard,
     Settings,
 }
 

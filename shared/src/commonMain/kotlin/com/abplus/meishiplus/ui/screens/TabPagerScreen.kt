@@ -131,7 +131,12 @@ fun TabPagerScreen(
                             if (!isInteractionEnabled) return@NavigationDrawerItem
                             when (item.destination) {
                                 DrawerDestination.SnsAuth -> onSnsAuthClick()
-                                DrawerDestination.AddCard -> onChargeClick()
+                                DrawerDestination.AddCard -> {
+                                    coroutineScope.launch {
+                                        drawerState.close()
+                                        onChargeClick()
+                                    }
+                                }
                                 DrawerDestination.Home,
                                 DrawerDestination.Settings -> {
                                     coroutineScope.launch {

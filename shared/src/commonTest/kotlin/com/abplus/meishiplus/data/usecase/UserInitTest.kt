@@ -48,15 +48,54 @@ class UserInitTest {
         )
         assertTrue(userRepository.savedUsers.isNotEmpty())
     }
+
+    @Test
+    fun purchaseAdditionalCard_copiesFirstCardWithoutPartnerIds() = runTest {
+        val userRepository = RecordingUserRepository(
+            initialUser = UserEntity(
+                id = "user-1",
+                cardIds = listOf("card-1"),
+            ),
+        )
+        val cardRepository = RecordingCardRepository()
+        cardRepository.cards["card-1"] = CardEntity.default().copy(
+            id = "card-1",
+            ownerUid = "user-1",
+            caption = "Public",
+            partnerIds = listOf("partner-1", "partner-2"),
+        )
+        val userInit = UserInit(
+            userRepository = userRepository,
+            cardRepository = cardRepository,
+        )
+
+        val appUser = userInit.purchaseAdditionalCard(
+            AuthUser(
+                uid = "user-1",
+                displayName = "Taro",
+                email = "taro@example.com",
+                photoUrl = null,
+            ),
+        )
+
+        val addedCard = appUser.cards.last()
+        assertEquals("card-2", addedCard.id)
+        assertEquals("user-1", addedCard.ownerUid)
+        assertEquals("Public", addedCard.caption)
+        assertEquals(emptyList(), addedCard.partnerIds)
+        assertEquals(listOf("card-1", "card-2"), appUser.user.cardIds)
+    }
 }
 
-private class RecordingUserRepository : UserRepository {
+private class RecordingUserRepository(
+    private val initialUser: UserEntity? = null,
+) : UserRepository {
     val savedUsers = mutableListOf<UserEntity>()
 
     override suspend fun addUser(user: UserEntity): UserEntity = user
 
     override suspend fun getUser(id: String): UserEntity =
-        UserEntity(
+        initialUser ?: UserEntity(
             id = id,
             cardIds = emptyList(),
         )
@@ -76,7 +115,9 @@ private class RecordingCardRepository : CardRepository {
 
     override suspend fun addCard(card: CardEntity): CardEntity {
         addCardCalled = true
-        error("addCard should not be called by UserInit")
+        val cardWithId = card.withInitializedLayout().copy(id = "card-${cards.size + 1}")
+        cards[cardWithId.id] = cardWithId
+        return cardWithId
     }
 
     override suspend fun getCard(id: String): CardEntity =

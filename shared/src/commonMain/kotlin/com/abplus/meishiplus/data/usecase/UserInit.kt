@@ -64,6 +64,7 @@ class UserInit(
             sourceCard.copy(
                 id = "",
                 ownerUid = authUser.uid,
+                partnerIds = emptyList(),
             ),
         )
         val updatedUser = userEntity.copy(

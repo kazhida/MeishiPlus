@@ -253,8 +253,10 @@ fun App(
                     onBackClick = {
                         navController.popBackStack()
                     },
-                    onPurchaseClick = { onSuccess ->
-                        onPurchaseCardClick?.invoke(onSuccess)
+                    onPurchaseClick = {
+                        onPurchaseCardClick?.invoke {
+                            navController.popBackStack<HomeRoute>(inclusive = false)
+                        }
                     },
                 )
             }

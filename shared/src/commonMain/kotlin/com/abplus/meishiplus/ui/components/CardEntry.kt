@@ -1,17 +1,20 @@
 package com.abplus.meishiplus.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -22,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +41,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.abplus.meishiplus.data.entities.CardEntity
 import com.abplus.meishiplus.data.model.Account
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import meishiplus.shared.generated.resources.Res
 import meishiplus.shared.generated.resources.ic_sns_facebook
 import meishiplus.shared.generated.resources.ic_sns_github
@@ -57,106 +63,119 @@ fun CardEntry(
 ) {
     val accountItems = authenticatedAccounts.map { it.toCardAccountItemSpec() }
 
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .imePadding(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            top = 16.dp,
+            end = 16.dp,
+            bottom = 96.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        EntrySection(title = "基本情報") {
-            EntryTextField(
-                value = cardEntity.caption,
-                onValueChange = { onCardChange(cardEntity.copy(caption = it)) },
-                label = "タブ見出し",
-            )
-            EntryTextField(
-                value = cardEntity.name.value,
-                onValueChange = { onCardChange(cardEntity.copy(name = cardEntity.name.copy(value = it))) },
-                label = "氏名",
-            )
-            EntryTextField(
-                value = cardEntity.organization.value,
-                onValueChange = { onCardChange(cardEntity.copy(organization = cardEntity.organization.copy(value = it))) },
-                label = "会社・組織",
-            )
-            EntryTextField(
-                value = cardEntity.title.value,
-                onValueChange = { onCardChange(cardEntity.copy(title = cardEntity.title.copy(value = it))) },
-                label = "役職",
-            )
+        item {
+            EntrySection(title = "基本情報") {
+                EntryTextField(
+                    value = cardEntity.caption,
+                    onValueChange = { onCardChange(cardEntity.copy(caption = it)) },
+                    label = "タブ見出し",
+                )
+                EntryTextField(
+                    value = cardEntity.name.value,
+                    onValueChange = { onCardChange(cardEntity.copy(name = cardEntity.name.copy(value = it))) },
+                    label = "氏名",
+                )
+                EntryTextField(
+                    value = cardEntity.organization.value,
+                    onValueChange = { onCardChange(cardEntity.copy(organization = cardEntity.organization.copy(value = it))) },
+                    label = "会社・組織",
+                )
+                EntryTextField(
+                    value = cardEntity.title.value,
+                    onValueChange = { onCardChange(cardEntity.copy(title = cardEntity.title.copy(value = it))) },
+                    label = "役職",
+                )
+            }
         }
 
-        EntrySection(title = "連絡先") {
-            EntryTextField(
-                value = cardEntity.email.value,
-                onValueChange = { onCardChange(cardEntity.copy(email = cardEntity.email.copy(value = it))) },
-                label = "メールアドレス",
-                keyboardType = KeyboardType.Email,
-            )
-            EntryTextField(
-                value = cardEntity.phone.value,
-                onValueChange =
-                    {
-                        onCardChange(
-                            cardEntity.copy(
-                                phone = cardEntity.phone.copy(value = it)
+        item {
+            EntrySection(title = "連絡先") {
+                EntryTextField(
+                    value = cardEntity.email.value,
+                    onValueChange = { onCardChange(cardEntity.copy(email = cardEntity.email.copy(value = it))) },
+                    label = "メールアドレス",
+                    keyboardType = KeyboardType.Email,
+                )
+                EntryTextField(
+                    value = cardEntity.phone.value,
+                    onValueChange =
+                        {
+                            onCardChange(
+                                cardEntity.copy(
+                                    phone = cardEntity.phone.copy(value = it)
+                                )
                             )
-                        )
-	                },
-	                label = "電話番号",
-	            )
-            EntryTextField(
-                value = cardEntity.address1.value,
-                onValueChange = { onCardChange(cardEntity.copy(address1 = cardEntity.address1.copy(value = it))) },
-                label = "住所1",
-                imeAction = ImeAction.Next,
-            )
-            EntryTextField(
-                value = cardEntity.address2.value,
-                onValueChange = { onCardChange(cardEntity.copy(address2 = cardEntity.address2.copy(value = it))) },
-                label = "住所2",
-                imeAction = ImeAction.Next,
-            )
+                        },
+                    label = "電話番号",
+                )
+                EntryTextField(
+                    value = cardEntity.address1.value,
+                    onValueChange = { onCardChange(cardEntity.copy(address1 = cardEntity.address1.copy(value = it))) },
+                    label = "住所1",
+                    imeAction = ImeAction.Next,
+                )
+                EntryTextField(
+                    value = cardEntity.address2.value,
+                    onValueChange = { onCardChange(cardEntity.copy(address2 = cardEntity.address2.copy(value = it))) },
+                    label = "住所2",
+                    imeAction = ImeAction.Next,
+                )
+            }
         }
 
         if (accountItems.isNotEmpty()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = "認証済みSNS",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                accountItems.forEach { item ->
-                    val isChecked = cardEntity.accounts.any {
-                        it.service.equals(item.account.service, ignoreCase = true)
-                    }
-                    CardAccountListItem(
-                        item = item,
-                        checked = isChecked,
-                        onCheckedChange = { checked ->
-                            onAuthenticatedAccountCheckedChange(item.account, checked)
-                        },
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = "認証済みSNS",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.titleMedium,
                     )
+                    accountItems.forEach { item ->
+                        val isChecked = cardEntity.accounts.any {
+                            it.service.equals(item.account.service, ignoreCase = true)
+                        }
+                        CardAccountListItem(
+                            item = item,
+                            checked = isChecked,
+                            onCheckedChange = { checked ->
+                                onAuthenticatedAccountCheckedChange(item.account, checked)
+                            },
+                        )
+                    }
                 }
             }
         }
 
-        EntrySection(
-            title = "備考",
-        ) {
-            EntryTextField(
-                value = cardEntity.remark,
-                onValueChange = { onCardChange(cardEntity.copy(remark = it)) },
-                label = "自己紹介・PRなど",
-                minLines = 3,
-                imeAction = ImeAction.Done,
-            )
+        item {
+            EntrySection(
+                title = "備考",
+            ) {
+                EntryTextField(
+                    value = cardEntity.remark,
+                    onValueChange = { onCardChange(cardEntity.copy(remark = it)) },
+                    label = "自己紹介・PRなど",
+                    minLines = 3,
+                    maxLines = 8,
+                    singleLine = false,
+                    imeAction = ImeAction.Default,
+                )
+            }
         }
     }
 }
@@ -187,9 +206,13 @@ private fun EntryTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
     minLines: Int = 1,
+    maxLines: Int = 1,
+    singleLine: Boolean = true,
     supportingText: String? = null,
 ) {
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
     var textFieldValue by remember {
         mutableStateOf(TextFieldValue(value))
     }
@@ -214,11 +237,16 @@ private fun EntryTextField(
         label = { Text(label) },
         modifier = modifier
             .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoViewRequester)
             .onFocusChanged { focusState ->
                 if (focusState.isFocused) {
                     textFieldValue = textFieldValue.copy(
                         selection = TextRange(0, textFieldValue.text.length),
                     )
+                    coroutineScope.launch {
+                        delay(120)
+                        bringIntoViewRequester.bringIntoView()
+                    }
                 }
             },
         keyboardOptions = KeyboardOptions(
@@ -230,6 +258,8 @@ private fun EntryTextField(
             onDone = { focusManager.clearFocus() },
         ),
         minLines = minLines,
+        maxLines = maxLines,
+        singleLine = singleLine,
         supportingText = supportingText?.let { text ->
             { Text(text) }
         },

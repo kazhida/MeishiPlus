@@ -78,6 +78,12 @@ class UserInit(
         )
     }
 
+    suspend fun saveCardOrder(userEntity: UserEntity, cardIds: List<String>): UserEntity {
+        val updatedUser = userEntity.copy(cardIds = cardIds)
+        userRepository.saveUser(updatedUser)
+        return updatedUser
+    }
+
     private fun createDefaultCard(
         ownerUid: String,
         caption: String,

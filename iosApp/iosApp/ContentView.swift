@@ -2,11 +2,8 @@ import FirebaseAuth
 import FirebaseCore
 import GoogleSignIn
 import Shared
-import StoreKit
 import SwiftUI
 import UIKit
-
-private let cardAddProductId = "card_add_100yen"
 
 struct ComposeView: UIViewControllerRepresentable {
     let authUser: AuthUser
@@ -37,6 +34,7 @@ struct ContentView: View {
     @StateObject private var authModel = FirebaseAuthModel()
     private let userRepository: FireStoreUserRepository
     private let cardRepository: FireStoreCardRepository
+    private let purchaseManager = IosCardPurchaseManager()
     @State private var userViewModel: UserViewModel
 
     init() {
@@ -63,17 +61,22 @@ struct ContentView: View {
                     onSignOut: authModel.signOut,
                     onPurchaseCardClick: { onSuccess in
                         Task {
-                            await purchaseAdditionalCard(
+                            userViewModel.setPurchasing(isPurchasing: true)
+                            let purchaseResult = await purchaseManager.purchaseAdditionalCard(
                                 authUser: user,
                                 userRepository: userRepository,
-                                cardRepository: cardRepository,
-                                userViewModel: userViewModel,
-                                onSuccess: onSuccess,
-                                onFailure: { message in
-                                    userViewModel.setErrorMessage(message: message)
-                                    userViewModel.setPurchasing(isPurchasing: false)
-                                }
+                                cardRepository: cardRepository
                             )
+                            userViewModel.setPurchasing(isPurchasing: false)
+                            switch purchaseResult {
+                            case .success(let appUser):
+                                userViewModel.setAppUser(appUser: appUser)
+                                _ = onSuccess()
+                            case .failure(let message):
+                                userViewModel.setErrorMessage(message: message)
+                            case .cancelled:
+                                break
+                            }
                         }
                     }
                 )
@@ -128,108 +131,6 @@ private struct GoogleSignInView: View {
             }
         }
         .padding(24)
-    }
-}
-
-@MainActor
-private func purchaseAdditionalCard(
-    authUser: AuthUser,
-    userRepository: FireStoreUserRepository,
-    cardRepository: FireStoreCardRepository,
-    userViewModel: UserViewModel,
-    onSuccess: @escaping () -> KotlinUnit,
-    onFailure: @escaping (String) -> Void
-) async {
-    do {
-        userViewModel.setPurchasing(isPurchasing: true)
-        let products = try await Product.products(for: [cardAddProductId])
-        guard let product = products.first else {
-            onFailure("購入対象の商品を取得できませんでした。")
-            return
-        }
-
-        let result = try await product.purchase()
-        switch result {
-        case .success(let verification):
-            let transaction = try verifiedTransaction(verification)
-            let appUser = try await purchaseAdditionalCard(
-                authUser: authUser,
-                userRepository: userRepository,
-                cardRepository: cardRepository
-            )
-            userViewModel.setAppUser(appUser: appUser)
-            userViewModel.setPurchasing(isPurchasing: false)
-            onSuccess()
-            await transaction.finish()
-        case .userCancelled:
-            userViewModel.setPurchasing(isPurchasing: false)
-        case .pending:
-            onFailure("購入が保留中です。")
-        @unknown default:
-            onFailure("購入に失敗しました。")
-        }
-    } catch {
-        onFailure(error.localizedDescription)
-    }
-}
-
-private func purchaseAdditionalCard(
-    authUser: AuthUser,
-    userRepository: FireStoreUserRepository,
-    cardRepository: FireStoreCardRepository
-) async throws -> AppUser {
-    let userEntity = (try? await userRepository.getUser(id: authUser.uid))
-        ?? UserEntity(
-            id: authUser.uid,
-            createdAt: 0,
-            updatedAt: 0,
-            accounts: [],
-            cardIds: []
-        )
-    let cards = userEntity.cardIds.isEmpty
-        ? []
-        : try await cardRepository.getCards(cardIds: userEntity.cardIds)
-    guard let sourceCard = cards.first else {
-        throw NSError(domain: "MeishiPlus", code: 1, userInfo: [NSLocalizedDescriptionKey: "追加対象のカードがありません。"])
-    }
-    let addedCard = try await cardRepository.addCard(
-        card: CardEntity(
-            id: "",
-            ownerUid: authUser.uid,
-            caption: sourceCard.caption,
-            name: sourceCard.name,
-            email: sourceCard.email,
-            address1: sourceCard.address1,
-            address2: sourceCard.address2,
-            phone: sourceCard.phone,
-            organization: sourceCard.organization,
-            title: sourceCard.title,
-            bgAlpha: sourceCard.bgAlpha,
-            bgFile: sourceCard.bgFile,
-            createdAt: sourceCard.createdAt,
-            updatedAt: sourceCard.updatedAt,
-            remark: sourceCard.remark,
-            accounts: sourceCard.accounts,
-            partnerIds: sourceCard.partnerIds
-        )
-    )
-    let updatedUser = UserEntity(
-        id: userEntity.id,
-        createdAt: userEntity.createdAt,
-        updatedAt: userEntity.updatedAt,
-        accounts: userEntity.accounts,
-        cardIds: userEntity.cardIds + [addedCard.id]
-    )
-    try await userRepository.saveUser(user: updatedUser)
-    return AppUser(user: updatedUser, cards: cards + [addedCard])
-}
-
-private func verifiedTransaction(_ result: VerificationResult<StoreKit.Transaction>) throws -> StoreKit.Transaction {
-    switch result {
-    case .verified(let safe):
-        return safe
-    case .unverified(_, let error):
-        throw error
     }
 }
 

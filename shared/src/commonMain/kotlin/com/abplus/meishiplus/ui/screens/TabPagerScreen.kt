@@ -2,6 +2,7 @@ package com.abplus.meishiplus.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,9 +45,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.entities.CardEntity
@@ -86,6 +91,7 @@ fun TabPagerScreen(
     onExchangeCard: (Int) -> Unit = {},
     onPreviewCard: (Int) -> Unit = {},
     onPreviewPartnerCard: (CardEntity) -> Unit = {},
+    onReorderCards: (fromIndex: Int, toIndex: Int) -> Unit = { _, _ -> },
     onSnsAuthClick: () -> Unit = {},
     onChargeClick: () -> Unit = {},
 ) {
@@ -106,6 +112,7 @@ fun TabPagerScreen(
         initialPage = 0,
         pageCount = { tabs.size },
     )
+    var tabBounds by remember { mutableStateOf<List<Rect>>(emptyList()) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
@@ -214,6 +221,8 @@ fun TabPagerScreen(
                         selectedTabIndex = pagerState.currentPage,
                     ) {
                         tabs.forEachIndexed { index, title ->
+                            var dragStartCenterX = 0f
+                            var dragOffsetX = 0f
                             Tab(
                                 selected = pagerState.currentPage == index,
                                 enabled = isInteractionEnabled,
@@ -223,6 +232,44 @@ fun TabPagerScreen(
                                     }
                                 },
                                 text = { Text(title) },
+                                modifier = Modifier
+                                    .onGloballyPositioned { coordinates ->
+                                        val updatedBounds = tabBounds.toMutableList()
+                                        while (updatedBounds.size <= index) {
+                                            updatedBounds += Rect.Zero
+                                        }
+                                        updatedBounds[index] = coordinates.boundsInRoot()
+                                        tabBounds = updatedBounds
+                                    }
+                                    .pointerInput(index, isInteractionEnabled, tabBounds) {
+                                        if (!isInteractionEnabled || tabs.size < 2) return@pointerInput
+
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = {
+                                                val bounds = tabBounds.getOrNull(index) ?: return@detectDragGesturesAfterLongPress
+                                                dragStartCenterX = (bounds.left + bounds.right) / 2f
+                                                dragOffsetX = 0f
+                                            },
+                                            onDrag = { change, dragAmount ->
+                                                change.consume()
+                                                dragOffsetX += dragAmount.x
+                                            },
+                                            onDragEnd = {
+                                                val targetIndex = tabBounds.targetIndexForX(
+                                                    dragStartCenterX + dragOffsetX,
+                                                )
+                                                if (targetIndex != null && targetIndex != index) {
+                                                    onReorderCards(index, targetIndex)
+                                                    coroutineScope.launch {
+                                                        pagerState.animateScrollToPage(targetIndex)
+                                                    }
+                                                }
+                                            },
+                                            onDragCancel = {
+                                                dragOffsetX = 0f
+                                            },
+                                        )
+                                    },
                             )
                         }
                     }
@@ -287,6 +334,20 @@ private enum class DrawerDestination {
     SnsAuth,
     AddCard,
     Settings,
+}
+
+private fun List<Rect>.targetIndexForX(x: Float): Int? {
+    if (isEmpty()) return null
+
+    firstOrNull { bounds ->
+        bounds != Rect.Zero && x in bounds.left..bounds.right
+    }?.let { bounds ->
+        return indexOf(bounds)
+    }
+
+    return mapIndexedNotNull { index, bounds ->
+        if (bounds == Rect.Zero) null else index to kotlin.math.abs((bounds.left + bounds.right) / 2f - x)
+    }.minByOrNull { it.second }?.first
 }
 
 @Composable

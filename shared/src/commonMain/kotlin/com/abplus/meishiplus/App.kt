@@ -197,6 +197,9 @@ fun App(
                     onPreviewPartnerCard = { card ->
                         navController.navigate(PartnerCardRoute(card.id))
                     },
+                    onReorderCards = { fromIndex, toIndex ->
+                        effectiveUserViewModel?.reorderCards(fromIndex, toIndex)
+                    },
                     onSnsAuthClick = {
                         if (authUser != null) {
                             navController.navigate(SnsAuthRoute) {

@@ -154,6 +154,39 @@ class UserViewModel(
         }
     }
 
+    fun reorderCards(fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+
+        val currentState = _uiState.value
+        val appUser = currentState.appUser ?: return
+        if (fromIndex !in appUser.cards.indices || toIndex !in appUser.cards.indices) return
+
+        val updatedCards = appUser.cards.moved(fromIndex, toIndex)
+        val updatedCardIds = updatedCards.map { it.id }
+        val updatedUser = appUser.user.copy(cardIds = updatedCardIds)
+        val updatedAppUser = appUser.copy(
+            user = updatedUser,
+            cards = updatedCards,
+        )
+
+        _uiState.update {
+            it.copy(
+                appUser = updatedAppUser,
+                errorMessage = null,
+            )
+        }
+
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                userInit.saveCardOrder(updatedUser, updatedCardIds)
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(errorMessage = throwable.message ?: "名刺の並び順を保存できませんでした。")
+                }
+            }
+        }
+    }
+
     fun purchaseAdditionalCard() {
         val authUser = _uiState.value.authUser ?: return
 
@@ -271,3 +304,8 @@ class UserViewModel(
         }
     }
 }
+
+private fun <T> List<T>.moved(fromIndex: Int, toIndex: Int): List<T> =
+    toMutableList().apply {
+        add(toIndex, removeAt(fromIndex))
+    }

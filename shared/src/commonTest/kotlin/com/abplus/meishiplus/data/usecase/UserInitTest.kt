@@ -85,6 +85,27 @@ class UserInitTest {
         assertEquals(emptyList(), addedCard.partnerIds)
         assertEquals(listOf("card-1", "card-2"), appUser.user.cardIds)
     }
+
+    @Test
+    fun saveCardOrder_updatesUserCardIds() = runTest {
+        val userRepository = RecordingUserRepository()
+        val userInit = UserInit(
+            userRepository = userRepository,
+            cardRepository = RecordingCardRepository(),
+        )
+        val user = UserEntity(
+            id = "user-1",
+            cardIds = listOf("card-1", "card-2", "card-3"),
+        )
+
+        val updatedUser = userInit.saveCardOrder(
+            userEntity = user,
+            cardIds = listOf("card-2", "card-3", "card-1"),
+        )
+
+        assertEquals(listOf("card-2", "card-3", "card-1"), updatedUser.cardIds)
+        assertEquals(updatedUser, userRepository.savedUsers.last())
+    }
 }
 
 private class RecordingUserRepository(

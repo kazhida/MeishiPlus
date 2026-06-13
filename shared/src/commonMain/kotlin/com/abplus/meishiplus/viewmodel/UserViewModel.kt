@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.data.entities.CardEntity
-import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.usecase.UserInit

@@ -44,6 +44,7 @@ import com.abplus.meishiplus.ui.screens.CardExchangeScreen
 import com.abplus.meishiplus.ui.screens.CardLayoutScreen
 import com.abplus.meishiplus.ui.screens.CardPreviewScreen
 import com.abplus.meishiplus.ui.screens.CardPrintScreen
+import com.abplus.meishiplus.ui.screens.LicenseScreen
 import com.abplus.meishiplus.ui.screens.PartnerCardScreen
 import com.abplus.meishiplus.ui.screens.SnsAuthScreen
 import com.abplus.meishiplus.ui.screens.TabPagerScreen
@@ -211,6 +212,18 @@ fun App(
                         navController.navigate(ChargeRoute) {
                             launchSingleTop = true
                         }
+                    },
+                    onLicenseClick = {
+                        navController.navigate(LicenseRoute) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable<LicenseRoute> {
+                LicenseScreen(
+                    onBackClick = {
+                        navController.popBackStack()
                     },
                 )
             }
@@ -427,6 +440,9 @@ data object SnsAuthRoute
 
 @Serializable
 data object ChargeRoute
+
+@Serializable
+data object LicenseRoute
 
 @Serializable
 data class CardEntryRoute(val cardIndex: Int)

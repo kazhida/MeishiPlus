@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -94,6 +95,7 @@ fun TabPagerScreen(
     onReorderCards: (fromIndex: Int, toIndex: Int) -> Unit = { _, _ -> },
     onSnsAuthClick: () -> Unit = {},
     onChargeClick: () -> Unit = {},
+    onLicenseClick: () -> Unit = {},
 ) {
     val isInteractionEnabled = !isRefreshing
     val cards = appUser?.cards.orEmpty()
@@ -126,25 +128,42 @@ fun TabPagerScreen(
                 ProfileHeader(authUser = authUser)
                 drawerItems.forEachIndexed { _, item ->
                     NavigationDrawerItem(
-                        icon = {
-                            Icon(
-                                painter = painterResource(item.icon),
-                                contentDescription = null,
-                            )
+                        icon = item.icon?.let { icon ->
+                            {
+                                Icon(
+                                    painter = painterResource(icon),
+                                    contentDescription = null,
+                                )
+                            }
                         },
                         label = { Text(item.title) },
                         selected = item.destination == DrawerDestination.Home,
                         onClick = {
                             if (!isInteractionEnabled) return@NavigationDrawerItem
                             when (item.destination) {
-                                DrawerDestination.SnsAuth -> onSnsAuthClick()
+                                DrawerDestination.SnsAuth -> {
+                                    coroutineScope.launch {
+                                        drawerState.close()
+                                        onSnsAuthClick()
+                                    }
+                                }
                                 DrawerDestination.AddCard -> {
                                     coroutineScope.launch {
                                         drawerState.close()
                                         onChargeClick()
                                     }
                                 }
-                                DrawerDestination.Home,
+                                DrawerDestination.License -> {
+                                    coroutineScope.launch {
+                                        drawerState.close()
+                                        onLicenseClick()
+                                    }
+                                }
+                                DrawerDestination.Home -> {
+                                    coroutineScope.launch {
+                                        drawerState.close()
+                                    }
+                                }
                                 DrawerDestination.Settings -> {
                                     coroutineScope.launch {
                                         drawerState.close()
@@ -167,12 +186,29 @@ fun TabPagerScreen(
                         selected = false,
                         onClick = {
                             if (isInteractionEnabled) {
-                                onSignOut()
+                                coroutineScope.launch {
+                                    drawerState.close()
+                                    onSignOut()
+                                }
                             }
                         },
                         modifier = Modifier.padding(horizontal = 12.dp),
                     )
                 }
+                Spacer(modifier = Modifier.weight(1f))
+                NavigationDrawerItem(
+                    icon = null,
+                    label = { Text("ライセンス情報") },
+                    selected = false,
+                    onClick = {
+                        if (!isInteractionEnabled) return@NavigationDrawerItem
+                        coroutineScope.launch {
+                            drawerState.close()
+                            onLicenseClick()
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                )
             }
         },
     ) {
@@ -325,7 +361,7 @@ fun TabPagerScreen(
 
 private data class DrawerItem(
     val title: String,
-    val icon: DrawableResource,
+    val icon: DrawableResource?,
     val destination: DrawerDestination,
 )
 
@@ -333,6 +369,7 @@ private enum class DrawerDestination {
     Home,
     SnsAuth,
     AddCard,
+    License,
     Settings,
 }
 

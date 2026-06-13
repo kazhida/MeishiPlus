@@ -1,0 +1,53 @@
+Third-party library licenses
+Generated for MeishiPlus dependencies declared in Gradle.
+
+Scope:
+- Direct app/shared dependencies from gradle/libs.versions.toml.
+- Major runtime transitive dependency families resolved for androidApp releaseRuntimeClasspath.
+- Test-only dependencies are not listed.
+
+Last checked: 2026-06-13
+
+Apache License 2.0
+https://www.apache.org/licenses/LICENSE-2.0
+
+- AndroidX Activity, AppCompat, Biometric, Browser, Collection, Concurrent, Core,
+  Fragment, Lifecycle, Navigation, SavedState, Startup, Tracing, VersionedParcelable
+- AndroidX Camera and Media3
+- AndroidX Credentials
+- AndroidX Compose libraries
+- Coil
+- Firebase Android SDK libraries, including Firebase Auth and Firebase Firestore
+- Google Auto Value annotations
+- Google DataTransport
+- Guava, FailureAccess, ListenableFuture, Error Prone annotations, J2ObjC annotations
+- Jakarta Inject API
+- Javax Inject
+- JetBrains annotations
+- JetBrains Compose Multiplatform libraries
+- KScan
+- Kotlin standard libraries
+- Kotlinx AtomicFU, Coroutines, Serialization
+- Ktor
+- JSpecify
+
+Android Software Development Kit License
+https://developer.android.com/studio/terms.html
+
+- Google Play Billing Library
+- Google Play services libraries, including Auth, Base, Basement, FIDO, Location,
+  Tasks, and related identity/blockstore modules
+- Google ID library
+- Google Play Integrity and Core Common
+- reCAPTCHA Android library
+
+MIT License
+https://opensource.org/licenses/MIT
+
+- QRose
+- SLF4J
+
+Notes:
+- Google Play Billing is used by AndroidCardPurchaseManager.
+- Some entries group multiple artifacts published under the same project/family
+  and license.

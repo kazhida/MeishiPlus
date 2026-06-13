@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Third-party Library Licenses</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --text: #1f2937;
+      --muted: #5f6b7a;
+      --border: #d9dee7;
+      --accent: #1769aa;
+      --chip-bg: #eaf3fb;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111418;
+        --surface: #1a1f26;
+        --text: #eef2f6;
+        --muted: #aab4c0;
+        --border: #303844;
+        --accent: #7dbaf2;
+        --chip-bg: #18324a;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    a {
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+
+    .lead {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--chip-bg);
+      color: var(--text);
+      font-size: 0.9rem;
+      white-space: normal;
+    }
+
+    .panel {
+      margin-top: 16px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    .scope-list,
+    .license-list,
+    .notes-list {
+      margin: 12px 0 0;
+      padding-left: 1.25rem;
+    }
+
+    .scope-list li,
+    .license-list li,
+    .notes-list li {
+      margin: 6px 0;
+    }
+
+    .license-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .license-url {
+      font-size: 0.95rem;
+    }
+
+    footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Third-party Library Licenses</h1>
+      <p class="lead">Generated for MeishiPlus dependencies declared in Gradle.</p>
+      <div class="meta" aria-label="license metadata">
+        <span class="chip">Last checked: 2026-06-13</span>
+        <span class="chip">Excludes test-only dependencies</span>
+      </div>
+    </header>
+
+    <section class="panel" aria-labelledby="scope-title">
+      <h2 id="scope-title">Scope</h2>
+      <ul class="scope-list">
+        <li>Direct app/shared dependencies from <code>gradle/libs.versions.toml</code>.</li>
+        <li>Major runtime transitive dependency families resolved for <code>androidApp</code> <code>releaseRuntimeClasspath</code>.</li>
+        <li>Test-only dependencies are not listed.</li>
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="apache-title">
+      <div class="license-header">
+        <h2 id="apache-title">Apache License 2.0</h2>
+        <a class="license-url" href="https://www.apache.org/licenses/LICENSE-2.0">License text</a>
+      </div>
+      <ul class="license-list">
+        <li>AndroidX Activity, AppCompat, Biometric, Browser, Collection, Concurrent, Core, Fragment, Lifecycle, Navigation, SavedState, Startup, Tracing, VersionedParcelable</li>
+        <li>AndroidX Camera and Media3</li>
+        <li>AndroidX Credentials</li>
+        <li>AndroidX Compose libraries</li>
+        <li>Coil</li>
+        <li>Firebase Android SDK libraries, including Firebase Auth and Firebase Firestore</li>
+        <li>Google Auto Value annotations</li>
+        <li>Google DataTransport</li>
+        <li>Guava, FailureAccess, ListenableFuture, Error Prone annotations, J2ObjC annotations</li>
+        <li>Jakarta Inject API</li>
+        <li>Javax Inject</li>
+        <li>JetBrains annotations</li>
+        <li>JetBrains Compose Multiplatform libraries</li>
+        <li>KScan</li>
+        <li>Kotlin standard libraries</li>
+        <li>Kotlinx AtomicFU, Coroutines, Serialization</li>
+        <li>Ktor</li>
+        <li>JSpecify</li>
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="android-sdk-title">
+      <div class="license-header">
+        <h2 id="android-sdk-title">Android Software Development Kit License</h2>
+        <a class="license-url" href="https://developer.android.com/studio/terms.html">License text</a>
+      </div>
+      <ul class="license-list">
+        <li>Google Play Billing Library</li>
+        <li>Google Play services libraries, including Auth, Base, Basement, FIDO, Location, Tasks, and related identity/blockstore modules</li>
+        <li>Google ID library</li>
+        <li>Google Play Integrity and Core Common</li>
+        <li>reCAPTCHA Android library</li>
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="mit-title">
+      <div class="license-header">
+        <h2 id="mit-title">MIT License</h2>
+        <a class="license-url" href="https://opensource.org/licenses/MIT">License text</a>
+      </div>
+      <ul class="license-list">
+        <li>QRose</li>
+        <li>SLF4J</li>
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="notes-title">
+      <h2 id="notes-title">Notes</h2>
+      <ul class="notes-list">
+        <li>Google Play Billing is used by <code>AndroidCardPurchaseManager</code>.</li>
+        <li>Some entries group multiple artifacts published under the same project/family and license.</li>
+      </ul>
+    </section>
+
+    <footer>
+      This page is based on <code>shared/src/commonMain/assets/licensetxt</code>.
+    </footer>
+  </main>
+</body>
+</html>

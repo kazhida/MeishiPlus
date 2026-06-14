@@ -27,7 +27,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,7 +39,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.abplus.meishiplus.auth.FacebookAuth
 import com.abplus.meishiplus.auth.GithubAuth
 import com.abplus.meishiplus.auth.InstagramAuth
 import com.abplus.meishiplus.auth.QiitaAuth
@@ -59,11 +62,14 @@ fun SnsAuthScreen(
     userEntity: UserEntity = UserEntity(),
     modifier: Modifier = Modifier,
     isRefreshing: Boolean = false,
+    errorMessage: String? = null,
     onRefresh: () -> Unit = {},
     onBackClick: () -> Unit = {},
+    onFacebookAuthClick: suspend () -> Unit = {},
     onUnlinkAccount: suspend (Account) -> Unit = {},
 ) {
-    val isInteractionEnabled = !isRefreshing
+    var isFacebookAuthInProgress by remember { mutableStateOf(false) }
+    val isInteractionEnabled = !isRefreshing && !isFacebookAuthInProgress
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
     val snsAccounts = listOf(
@@ -82,11 +88,11 @@ fun SnsAuthScreen(
             icon = Res.drawable.ic_sns_qiita,
             account = userEntity.accounts.firstOrNull { it is Account.Qiita || it.service == "qiita" },
         ),
-//        SnsAccountItemSpec(
-//            serviceName = "Facebook",
-//            icon = Res.drawable.ic_sns_facebook,
-//            account = userEntity.accounts.firstOrNull { it is Account.Facebook || it.service == "facebook" },
-//        ),
+        SnsAccountItemSpec(
+            serviceName = "Facebook",
+            icon = Res.drawable.ic_sns_facebook,
+            account = userEntity.accounts.firstOrNull { it is Account.Facebook || it.service == "facebook" },
+        ),
 //        SnsAccountItemSpec(
 //            serviceName = "Instagram",
 //            icon = Res.drawable.ic_sns_instagram,
@@ -132,6 +138,19 @@ fun SnsAuthScreen(
                         .fillMaxSize()
                         .padding(vertical = 8.dp),
                 ) {
+                    errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+                        items(
+                            items = listOf(message),
+                            key = { "sns-auth-error" },
+                        ) { snsAuthError ->
+                            Text(
+                                text = snsAuthError,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
                     items(
                         items = snsAccounts,
                         key = { it.serviceName },
@@ -159,9 +178,12 @@ fun SnsAuthScreen(
                                     "Facebook" -> {
                                         {
                                             coroutineScope.launch {
-                                                val url = FacebookAuth.authorizationUrl()
-                                                println("DEBUG Facebook authorizationUrl: $url")
-                                                uriHandler.openUri(url)
+                                                isFacebookAuthInProgress = true
+                                                try {
+                                                    onFacebookAuthClick()
+                                                } finally {
+                                                    isFacebookAuthInProgress = false
+                                                }
                                             }
                                             Unit
                                         }
@@ -219,7 +241,7 @@ fun SnsAuthScreen(
                     }
                 }
             }
-            if (isRefreshing) {
+            if (isRefreshing || isFacebookAuthInProgress) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,

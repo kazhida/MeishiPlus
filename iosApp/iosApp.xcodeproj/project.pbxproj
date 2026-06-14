@@ -11,6 +11,8 @@
 		11A000000000000000000002 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 11A000000000000000000102 /* FirebaseCore */; };
 		11A000000000000000000003 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 11A000000000000000000103 /* GoogleSignIn */; };
 		11A000000000000000000004 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 11A000000000000000000104 /* FirebaseFirestore */; };
+		11A000000000000000000005 /* FacebookCore in Frameworks */ = {isa = PBXBuildFile; productRef = 11A000000000000000000105 /* FacebookCore */; };
+		11A000000000000000000006 /* FacebookLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 11A000000000000000000106 /* FacebookLogin */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +54,8 @@
 				11A000000000000000000002 /* FirebaseCore in Frameworks */,
 				11A000000000000000000003 /* GoogleSignIn in Frameworks */,
 				11A000000000000000000004 /* FirebaseFirestore in Frameworks */,
+				11A000000000000000000005 /* FacebookCore in Frameworks */,
+				11A000000000000000000006 /* FacebookLogin in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -100,6 +104,8 @@
 				11A000000000000000000102 /* FirebaseCore */,
 				11A000000000000000000103 /* GoogleSignIn */,
 				11A000000000000000000104 /* FirebaseFirestore */,
+				11A000000000000000000105 /* FacebookCore */,
+				11A000000000000000000106 /* FacebookLogin */,
 			);
 			productName = iosApp;
 			productReference = 84B787112921830A9B8770DB /* MeishiPlus.app */;
@@ -132,6 +138,7 @@
 			packageReferences = (
 				11A000000000000000000201 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				11A000000000000000000202 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				11A000000000000000000203 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 568B1C4B8CE8A27044DE054D /* Products */;
@@ -405,6 +412,14 @@
 				minimumVersion = 8.0.0;
 			};
 		};
+		11A000000000000000000203 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/facebook-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 18.0.3;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -427,6 +442,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 11A000000000000000000201 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		11A000000000000000000105 /* FacebookCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 11A000000000000000000203 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */;
+			productName = FacebookCore;
+		};
+		11A000000000000000000106 /* FacebookLogin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 11A000000000000000000203 /* XCRemoteSwiftPackageReference "facebook-ios-sdk" */;
+			productName = FacebookLogin;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

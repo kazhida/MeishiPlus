@@ -2,6 +2,7 @@ package com.abplus.meishiplus.auth
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,23 +37,43 @@ import androidx.credentials.exceptions.GetCredentialProviderConfigurationExcepti
 import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.exceptions.NoCredentialException
 import com.abplus.meishiplus.App
+import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.data.usecase.UserInit
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
 import com.abplus.meishiplus.purchase.AndroidCardPurchaseManager
 import com.abplus.meishiplus.viewmodel.UserViewModel
+import com.facebook.AccessToken
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.GoogleAuthProvider
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+internal object FacebookLoginCallbackManager {
+    val callbackManager: CallbackManager = CallbackManager.Factory.create()
+
+    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean =
+        callbackManager.onActivityResult(requestCode, resultCode, data)
+}
 
 @Composable
 fun AndroidAuthGate(
@@ -74,6 +95,18 @@ fun AndroidAuthGate(
         auth.addAuthStateListener(listener)
         onDispose {
             auth.removeAuthStateListener(listener)
+        }
+    }
+
+    DisposableEffect(context, auth) {
+        AndroidFacebookAuthBridge.setLoginHandler {
+            authenticateFacebookWithFirebase(
+                context = context,
+                auth = auth,
+            )
+        }
+        onDispose {
+            AndroidFacebookAuthBridge.setLoginHandler(null)
         }
     }
 
@@ -275,6 +308,89 @@ private suspend fun signInWithGoogle(
         ?: error("Firebase Authのユーザー情報を取得できませんでした。")
 }
 
+private suspend fun authenticateFacebookWithFirebase(
+    context: Context,
+    auth: FirebaseAuth,
+): Account.Facebook {
+    val activity = context as? Activity ?: error("Facebook認証にはActivityコンテキストが必要です。")
+    require(context.facebookClientToken().isNotBlank()) {
+        "Facebook Client TokenをandroidApp/src/main/res/values/strings.xmlに設定してください。"
+    }
+    val currentUser = auth.currentUser ?: error("Facebook認証を連携するFirebaseユーザーが見つかりません。")
+    currentUser.facebookProviderUserId()?.let { facebookUserId ->
+        return facebookUserId.toFacebookAccount()
+    }
+
+    val accessToken = loginWithFacebookSdk(activity)
+    val credential = FacebookAuthProvider.getCredential(accessToken.token)
+
+    try {
+        currentUser.linkWithCredential(credential).await().user
+            ?: error("Facebook認証後のFirebaseユーザー情報を取得できませんでした。")
+    } catch (exception: FirebaseAuthUserCollisionException) {
+        throw IllegalStateException("このFacebookアカウントは別のユーザーに連携済みです。", exception)
+    } catch (exception: FirebaseAuthException) {
+        throw IllegalStateException(
+            exception.localizedMessage ?: "Facebook認証に失敗しました。",
+            exception,
+        )
+    }
+
+    return accessToken.userId.toFacebookAccount()
+}
+
+private suspend fun loginWithFacebookSdk(activity: Activity): AccessToken =
+    suspendCancellableCoroutine { continuation ->
+        val loginManager = LoginManager.getInstance()
+        val callbackManager = FacebookLoginCallbackManager.callbackManager
+        loginManager.registerCallback(
+            callbackManager,
+            object : FacebookCallback<LoginResult> {
+                override fun onSuccess(result: LoginResult) {
+                    loginManager.unregisterCallback(callbackManager)
+                    if (continuation.isActive) {
+                        continuation.resume(result.accessToken)
+                    }
+                }
+
+                override fun onCancel() {
+                    loginManager.unregisterCallback(callbackManager)
+                    if (continuation.isActive) {
+                        continuation.resumeWithException(
+                            IllegalStateException("Facebook認証がキャンセルされました。"),
+                        )
+                    }
+                }
+
+                override fun onError(error: FacebookException) {
+                    loginManager.unregisterCallback(callbackManager)
+                    if (continuation.isActive) {
+                        continuation.resumeWithException(
+                            IllegalStateException(
+                                error.localizedMessage ?: "Facebook認証に失敗しました。",
+                                error,
+                            ),
+                        )
+                    }
+                }
+            },
+        )
+        continuation.invokeOnCancellation {
+            loginManager.unregisterCallback(callbackManager)
+        }
+        loginManager.logInWithReadPermissions(activity, listOf("public_profile"))
+    }
+
+private fun FirebaseUser.facebookProviderUserId(): String? =
+    providerData.firstOrNull { it.providerId == FacebookAuthProvider.PROVIDER_ID }?.uid
+
+private fun String.toFacebookAccount(): Account.Facebook =
+    Account.Facebook(
+        service = "facebook",
+        userName = this,
+        userUrl = "https://www.facebook.com/$this",
+    )
+
 private fun Context.defaultWebClientId(): String {
     val resourceId = resources.getIdentifier(
         "default_web_client_id",
@@ -285,6 +401,19 @@ private fun Context.defaultWebClientId(): String {
         error("google-services.jsonを配置し、Googleログインを有効化してください。")
     }
     return getString(resourceId)
+}
+
+private fun Context.facebookClientToken(): String {
+    val resourceId = resources.getIdentifier(
+        "facebook_client_token",
+        "string",
+        packageName,
+    )
+    return if (resourceId == 0) {
+        ""
+    } else {
+        getString(resourceId).trim()
+    }
 }
 
 private fun FirebaseUser.toAuthUser(): AuthUser =

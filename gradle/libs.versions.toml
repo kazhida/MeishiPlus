@@ -15,6 +15,7 @@ coil = "3.5.0-beta01"
 credentials = "1.6.0"
 composeMultiplatform = "1.11.0"
 firebase-bom = "34.14.0"
+facebook-login = "18.2.3"
 google-services = "4.4.4"
 play-services-auth = "21.6.0"
 billing = "9.0.0"
@@ -56,6 +57,7 @@ compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-previ
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+facebook-login = { module = "com.facebook.android:facebook-login", version.ref = "facebook-login" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 google-play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }

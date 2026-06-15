@@ -1,3 +1,5 @@
+import FacebookCore
+import FacebookLogin
 import FirebaseAuth
 import FirebaseCore
 import GoogleSignIn
@@ -12,6 +14,7 @@ struct ComposeView: UIViewControllerRepresentable {
     let userViewModel: UserViewModel
     let onSignOut: () -> Void
     let onPurchaseCardClick: ((@escaping () -> KotlinUnit) -> Void)
+    let onFacebookAuthClick: (@escaping (Account.Facebook) -> Void, @escaping (String) -> Void) -> Void
 
     func makeUIViewController(context: Self.Context) -> UIViewController {
         MainViewControllerKt.MainViewController(
@@ -22,7 +25,17 @@ struct ComposeView: UIViewControllerRepresentable {
             userRepository: userRepository,
             cardRepository: cardRepository,
             userViewModel: userViewModel,
-            onPurchaseCardClick: onPurchaseCardClick
+            onPurchaseCardClick: onPurchaseCardClick,
+            onFacebookAuthClick: { onSuccess, onError in
+                onFacebookAuthClick(
+                    { account in
+                        _ = onSuccess(account)
+                    },
+                    { message in
+                        _ = onError(message)
+                    }
+                )
+            }
         )
     }
 
@@ -78,7 +91,8 @@ struct ContentView: View {
                                 break
                             }
                         }
-                    }
+                    },
+                    onFacebookAuthClick: authModel.linkFacebookAccount
                 )
                 .ignoresSafeArea()
             } else {
@@ -212,6 +226,61 @@ private final class FirebaseAuthModel: ObservableObject {
         }
     }
 
+    func linkFacebookAccount(
+        onSuccess: @escaping (Account.Facebook) -> Void,
+        onError: @escaping (String) -> Void
+    ) {
+        guard let currentUser = Auth.auth().currentUser else {
+            onError("Facebook認証を連携するFirebaseユーザーが見つかりません。")
+            return
+        }
+        if let providerUserId = currentUser.facebookProviderUserId {
+            onSuccess(providerUserId.toFacebookAccount())
+            return
+        }
+        guard let presentingViewController = UIApplication.shared.presentingViewController else {
+            onError("Facebook認証画面を表示できませんでした。")
+            return
+        }
+        guard let clientToken = Bundle.main.object(forInfoDictionaryKey: "FacebookClientToken") as? String,
+              !clientToken.isEmpty else {
+            onError("FacebookClientTokenをInfo.plistに設定してください。")
+            return
+        }
+        let loginManager = LoginManager()
+        loginManager.logIn(
+            permissions: ["public_profile"],
+            from: presentingViewController
+        ) { result, error in
+            Task { @MainActor in
+                if let error {
+                    onError(error.localizedDescription)
+                    return
+                }
+                guard let result, !result.isCancelled else {
+                    onError("Facebook認証がキャンセルされました。")
+                    return
+                }
+                guard let accessToken = result.token else {
+                    onError("Facebookアクセストークンを取得できませんでした。")
+                    return
+                }
+                let credential = FacebookAuthProvider.credential(
+                    withAccessToken: accessToken.tokenString
+                )
+                currentUser.link(with: credential) { _, error in
+                    Task { @MainActor in
+                        if let error {
+                            onError(error.localizedDescription)
+                            return
+                        }
+                        onSuccess(accessToken.userID.toFacebookAccount())
+                    }
+                }
+            }
+        }
+    }
+
     func signOut() {
         GIDSignIn.sharedInstance.signOut()
         do {
@@ -237,6 +306,22 @@ private extension User {
 private extension Optional where Wrapped == User {
     func toSharedAuthUser() -> AuthUser? {
         self?.toSharedAuthUser()
+    }
+}
+
+private extension User {
+    var facebookProviderUserId: String? {
+        providerData.first { $0.providerID == "facebook.com" }?.uid
+    }
+}
+
+private extension String {
+    func toFacebookAccount() -> Account.Facebook {
+        Account.Facebook(
+            service: "facebook",
+            userName: self,
+            userUrl: "https://www.facebook.com/\(self)"
+        )
     }
 }
 

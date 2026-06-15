@@ -1,7 +1,9 @@
+import FacebookCore
 import FirebaseCore
 import GoogleSignIn
 import Shared
 import SwiftUI
+import UIKit
 
 @main
 struct iOSApp: App {
@@ -10,6 +12,10 @@ struct iOSApp: App {
            Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
             FirebaseApp.configure()
         }
+        ApplicationDelegate.shared.application(
+            UIApplication.shared,
+            didFinishLaunchingWithOptions: nil
+        )
     }
 
     var body: some Scene {
@@ -17,6 +23,13 @@ struct iOSApp: App {
             ContentView()
                 .onOpenURL { url in
                     if GIDSignIn.sharedInstance.handle(url) {
+                        return
+                    }
+                    if ApplicationDelegate.shared.application(
+                        UIApplication.shared,
+                        open: url,
+                        options: [:]
+                    ) {
                         return
                     }
                     SnsAuthDeepLinkState.shared.submit(url: url.absoluteString)

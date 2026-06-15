@@ -21,6 +21,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.abplus.meishiplus.auth.AuthUser
 import com.abplus.meishiplus.auth.DefaultSnsAccountAuthenticator
+import com.abplus.meishiplus.auth.FacebookAuthManager
 import com.abplus.meishiplus.auth.SnsAuthDeepLinkState
 import com.abplus.meishiplus.auth.SnsAuthRedirectOutcome
 import com.abplus.meishiplus.auth.parseSnsAuthRedirect
@@ -30,8 +31,10 @@ import com.abplus.meishiplus.auth.snsAuthInvalidRedirectMessage
 import com.abplus.meishiplus.auth.snsAuthMissingCodeMessage
 import com.abplus.meishiplus.auth.snsAuthReflectFailedMessage
 import com.abplus.meishiplus.auth.snsAuthUnsupportedServiceMessage
+import com.abplus.meishiplus.auth.upsertAccount
 import com.abplus.meishiplus.data.entities.UserEntity
 import com.abplus.meishiplus.data.entities.CardEntity
+import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.data.model.AppUser
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.abplus.meishiplus.data.repositories.UserRepository
@@ -126,21 +129,12 @@ fun App(
                         state = outcome.state,
                         authenticator = DefaultSnsAccountAuthenticator,
                     )
-                    val currentUser = runCatching {
-                        repository.getUser(currentAuthUser.uid)
-                    }.getOrElse {
-                        UserEntity(id = currentAuthUser.uid)
-                    }
-                    val updatedUser = currentUser.copy(
-                        accounts = currentUser.accounts.filterNot {
-                            it.service.lowercase() == account.service.lowercase()
-                        } + account,
-                    )
-                    repository.saveUser(updatedUser)
                     viewModel.setAppUser(
-                        AppUser(
-                            user = updatedUser,
-                            cards = userState.appUser?.cards.orEmpty(),
+                        saveAuthenticatedSnsAccount(
+                            currentAuthUser = currentAuthUser,
+                            currentAppUser = userState.appUser,
+                            account = account,
+                            repository = repository,
                         ),
                     )
                 }.onFailure { throwable ->
@@ -230,11 +224,42 @@ fun App(
                 SnsAuthScreen(
                     userEntity = effectiveAppUser?.user ?: UserEntity(),
                     isRefreshing = userState.isLoading,
+                    errorMessage = effectiveErrorMessage,
                     onRefresh = {
                         effectiveUserViewModel?.reloadCurrentUser()
                     },
                     onBackClick = {
                         navController.popBackStack()
+                    },
+                    onFacebookAuthClick = {
+                        val currentAuthUser = authUser
+                        val repository = userRepository
+                        val viewModel = effectiveUserViewModel
+                        if (
+                            currentAuthUser == null ||
+                            repository == null ||
+                            viewModel == null
+                        ) {
+                            viewModel?.setErrorMessage(snsAuthReflectFailedMessage())
+                            return@SnsAuthScreen
+                        }
+
+                        viewModel.setErrorMessage(null)
+                        runCatching {
+                            val account = FacebookAuthManager().login()
+                            saveAuthenticatedSnsAccount(
+                                currentAuthUser = currentAuthUser,
+                                currentAppUser = effectiveAppUser,
+                                account = account,
+                                repository = repository,
+                            )
+                        }.onSuccess { updatedAppUser ->
+                            viewModel.setAppUser(updatedAppUser)
+                        }.onFailure { throwable ->
+                            viewModel.setErrorMessage(
+                                throwable.message ?: snsAuthReflectFailedMessage(),
+                            )
+                        }
                     },
                     onUnlinkAccount = { account ->
                         val repository = userRepository
@@ -460,6 +485,27 @@ data class CardExchangeRoute(val cardIndex: Int)
 
 @Serializable
 data class PartnerCardRoute(val cardId: String)
+
+private suspend fun saveAuthenticatedSnsAccount(
+    currentAuthUser: AuthUser,
+    currentAppUser: AppUser?,
+    account: Account,
+    repository: UserRepository,
+): AppUser {
+    val currentUser = currentAppUser?.user ?: runCatching {
+        repository.getUser(currentAuthUser.uid)
+    }.getOrElse {
+        UserEntity(id = currentAuthUser.uid)
+    }
+    val updatedUser = currentUser.copy(
+        accounts = currentUser.accounts.upsertAccount(account),
+    )
+    repository.saveUser(updatedUser)
+    return AppUser(
+        user = updatedUser,
+        cards = currentAppUser?.cards.orEmpty(),
+    )
+}
 
 private sealed interface PartnerCardScreenState {
     data object Loading : PartnerCardScreenState

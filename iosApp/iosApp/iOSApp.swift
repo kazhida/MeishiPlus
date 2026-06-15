@@ -1,6 +1,5 @@
 import FacebookCore
 import FirebaseCore
-import GoogleSignIn
 import Shared
 import SwiftUI
 import UIKit
@@ -22,9 +21,6 @@ struct iOSApp: App {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
-                    if GIDSignIn.sharedInstance.handle(url) {
-                        return
-                    }
                     if ApplicationDelegate.shared.application(
                         UIApplication.shared,
                         open: url,

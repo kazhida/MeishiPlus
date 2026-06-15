@@ -1,8 +1,10 @@
+import AuthenticationServices
+import CryptoKit
 import FacebookCore
 import FacebookLogin
 import FirebaseAuth
 import FirebaseCore
-import GoogleSignIn
+import Security
 import Shared
 import SwiftUI
 import UIKit
@@ -96,20 +98,22 @@ struct ContentView: View {
                 )
                 .ignoresSafeArea()
             } else {
-                GoogleSignInView(
+                AppleSignInView(
                     isLoading: authModel.isLoading,
                     errorMessage: authModel.errorMessage,
-                    onSignIn: authModel.signInWithGoogle
+                    onAppleSignInRequest: authModel.prepareAppleSignInRequest,
+                    onAppleSignInCompletion: authModel.handleAppleSignInCompletion
                 )
             }
         }
     }
 }
 
-private struct GoogleSignInView: View {
+private struct AppleSignInView: View {
     let isLoading: Bool
     let errorMessage: String?
-    let onSignIn: () -> Void
+    let onAppleSignInRequest: (ASAuthorizationAppleIDRequest) -> Void
+    let onAppleSignInCompletion: (Result<ASAuthorization, Error>) -> Void
 
     var body: some View {
         VStack(spacing: 16) {
@@ -117,24 +121,22 @@ private struct GoogleSignInView: View {
                 .font(.largeTitle)
                 .fontWeight(.semibold)
 
-            Text("Googleアカウントでログイン")
+            Text("Appleアカウントでログイン")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            Button(action: onSignIn) {
-                if isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Text("Googleでログイン")
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .buttonStyle(.borderedProminent)
+            SignInWithAppleButton(.signIn, onRequest: onAppleSignInRequest, onCompletion: onAppleSignInCompletion)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
             .controlSize(.large)
             .disabled(isLoading)
             .padding(.top, 8)
+
+            if isLoading {
+                ProgressView()
+                    .padding(.top, 4)
+            }
 
             if let errorMessage {
                 Text(errorMessage)
@@ -155,6 +157,7 @@ private final class FirebaseAuthModel: ObservableObject {
     @Published var errorMessage: String?
 
     private var authStateHandle: AuthStateDidChangeListenerHandle?
+    private var currentNonce: String?
 
     init() {
         guard FirebaseApp.app() != nil else {
@@ -175,52 +178,73 @@ private final class FirebaseAuthModel: ObservableObject {
         }
     }
 
-    func signInWithGoogle() {
+    func prepareAppleSignInRequest(_ request: ASAuthorizationAppleIDRequest) {
         guard !isLoading else {
             return
         }
-        guard let clientID = FirebaseApp.app()?.options.clientID else {
-            errorMessage = "FirebaseのclientIDを取得できませんでした。"
+        errorMessage = nil
+
+        let nonce = randomNonceString()
+        currentNonce = nonce
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = sha256(nonce)
+    }
+
+    func handleAppleSignInCompletion(_ result: Result<ASAuthorization, Error>) {
+        guard !isLoading else {
             return
         }
-        guard let presentingViewController = UIApplication.shared.presentingViewController else {
-            errorMessage = "ログイン画面を表示できませんでした。"
+        guard FirebaseApp.app() != nil else {
+            errorMessage = "GoogleService-Info.plistをiOSターゲットに追加してください。"
             return
         }
 
         isLoading = true
         errorMessage = nil
-        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
-        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { [weak self] result, error in
-            Task { @MainActor in
-                guard let self else {
-                    return
-                }
-                if let error {
-                    self.isLoading = false
-                    self.errorMessage = error.localizedDescription
-                    return
-                }
-                guard let user = result?.user,
-                      let idToken = user.idToken?.tokenString else {
-                    self.isLoading = false
-                    self.errorMessage = "Google IDトークンを取得できませんでした。"
-                    return
-                }
 
-                let credential = GoogleAuthProvider.credential(
-                    withIDToken: idToken,
-                    accessToken: user.accessToken.tokenString
-                )
-                Auth.auth().signIn(with: credential) { authResult, error in
-                    Task { @MainActor in
-                        self.isLoading = false
-                        if let error {
-                            self.errorMessage = error.localizedDescription
-                            return
-                        }
-                        self.currentUser = authResult?.user.toSharedAuthUser()
+        switch result {
+        case .failure(let error):
+            isLoading = false
+            errorMessage = error.localizedDescription
+        case .success(let authorization):
+            guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+                isLoading = false
+                errorMessage = "Apple認証情報を取得できませんでした。"
+                return
+            }
+            guard let nonce = currentNonce else {
+                isLoading = false
+                errorMessage = "Apple認証の内部状態が不正です。"
+                return
+            }
+            guard let appleIDToken = appleIDCredential.identityToken else {
+                isLoading = false
+                errorMessage = "Apple IDトークンを取得できませんでした。"
+                return
+            }
+            guard let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+                isLoading = false
+                errorMessage = "Apple IDトークンの形式が不正です。"
+                return
+            }
+
+            let credential = OAuthProvider.appleCredential(
+                withIDToken: idTokenString,
+                rawNonce: nonce,
+                fullName: appleIDCredential.fullName
+            )
+            Auth.auth().signIn(with: credential) { [weak self] authResult, error in
+                Task { @MainActor in
+                    guard let self else {
+                        return
                     }
+                    self.currentNonce = nil
+                    self.isLoading = false
+                    if let error {
+                        self.errorMessage = error.localizedDescription
+                        return
+                    }
+                    self.currentUser = authResult?.user.toSharedAuthUser()
                 }
             }
         }
@@ -282,7 +306,6 @@ private final class FirebaseAuthModel: ObservableObject {
     }
 
     func signOut() {
-        GIDSignIn.sharedInstance.signOut()
         do {
             try Auth.auth().signOut()
             currentUser = nil
@@ -323,6 +346,40 @@ private extension String {
             userUrl: "https://www.facebook.com/\(self)"
         )
     }
+}
+
+private func randomNonceString(length: Int = 32) -> String {
+    precondition(length > 0)
+    let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+    var result = ""
+    var remainingLength = length
+
+    while remainingLength > 0 {
+        var randomBytes = [UInt8](repeating: 0, count: 16)
+        let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        if errorCode != errSecSuccess {
+            fatalError("Unable to generate nonce. OSStatus: \(errorCode)")
+        }
+
+        randomBytes.forEach { random in
+            if remainingLength == 0 {
+                return
+            }
+
+            if random < charset.count {
+                result.append(charset[Int(random)])
+                remainingLength -= 1
+            }
+        }
+    }
+
+    return result
+}
+
+private func sha256(_ input: String) -> String {
+    let inputData = Data(input.utf8)
+    let hashedData = SHA256.hash(data: inputData)
+    return hashedData.map { String(format: "%02x", $0) }.joined()
 }
 
 private extension UIApplication {

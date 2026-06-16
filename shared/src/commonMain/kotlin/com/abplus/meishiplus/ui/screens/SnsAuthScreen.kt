@@ -88,11 +88,11 @@ fun SnsAuthScreen(
             icon = Res.drawable.ic_sns_qiita,
             account = userEntity.accounts.firstOrNull { it is Account.Qiita || it.service == "qiita" },
         ),
-        SnsAccountItemSpec(
-            serviceName = "Facebook",
-            icon = Res.drawable.ic_sns_facebook,
-            account = userEntity.accounts.firstOrNull { it is Account.Facebook || it.service == "facebook" },
-        ),
+//        SnsAccountItemSpec(
+//            serviceName = "Facebook",
+//            icon = Res.drawable.ic_sns_facebook,
+//            account = userEntity.accounts.firstOrNull { it is Account.Facebook || it.service == "facebook" },
+//        ),
 //        SnsAccountItemSpec(
 //            serviceName = "Instagram",
 //            icon = Res.drawable.ic_sns_instagram,

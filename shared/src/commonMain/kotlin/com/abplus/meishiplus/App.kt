@@ -61,7 +61,7 @@ fun App(
     authUser: AuthUser? = null,
     appUser: AppUser? = null,
     errorMessage: String? = null,
-    onSignOut: (() -> Unit)? = null,
+    onSignOut: ((Boolean) -> Unit)? = null,
     userViewModel: UserViewModel? = null,
     userRepository: UserRepository? = null,
     cardRepository: CardRepository? = null,
@@ -170,6 +170,7 @@ fun App(
                     onSignOut = onSignOut,
                     cardRepository = cardRepository,
                     isRefreshing = userState.isLoading,
+                    isSigningOut = userState.isSigningOut,
                     onRefresh = {
                         effectiveUserViewModel?.reloadCurrentUser()
                     },

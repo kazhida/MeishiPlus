@@ -31,8 +31,10 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -82,9 +84,10 @@ fun TabPagerScreen(
     authUser: AuthUser? = null,
     appUser: AppUser? = null,
     errorMessage: String? = null,
-    onSignOut: (() -> Unit)? = null,
+    onSignOut: ((Boolean) -> Unit)? = null,
     cardRepository: CardRepository? = null,
     isRefreshing: Boolean = false,
+    isSigningOut: Boolean = false,
     onRefresh: () -> Unit = {},
     onEditCard: (Int) -> Unit = {},
     onLayoutCard: (Int) -> Unit = {},
@@ -97,7 +100,7 @@ fun TabPagerScreen(
     onChargeClick: () -> Unit = {},
     onLicenseClick: () -> Unit = {},
 ) {
-    val isInteractionEnabled = !isRefreshing
+    val isInteractionEnabled = !isRefreshing && !isSigningOut
     val cards = appUser?.cards.orEmpty()
     val tabs = if (cards.isNotEmpty()) {
         cards.mapIndexed { index, card -> card.caption.ifBlank { "名刺${index + 1}" } }
@@ -108,7 +111,7 @@ fun TabPagerScreen(
         DrawerItem("ホーム", Res.drawable.ic_home, DrawerDestination.Home),
         DrawerItem("SNS認証", Res.drawable.ic_badge, DrawerDestination.SnsAuth),
         DrawerItem("カード追加", Res.drawable.ic_card_add, DrawerDestination.AddCard),
-        DrawerItem("設定", Res.drawable.ic_settings, DrawerDestination.Settings),
+//        DrawerItem("設定", Res.drawable.ic_settings, DrawerDestination.Settings),
     )
     val pagerState = rememberPagerState(
         initialPage = 0,
@@ -117,6 +120,7 @@ fun TabPagerScreen(
     var tabBounds by remember { mutableStateOf<List<Rect>>(emptyList()) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+    var showSignOutDialog by remember { mutableStateOf(false) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -188,7 +192,7 @@ fun TabPagerScreen(
                             if (isInteractionEnabled) {
                                 coroutineScope.launch {
                                     drawerState.close()
-                                    onSignOut()
+                                    showSignOutDialog = true
                                 }
                             }
                         },
@@ -353,6 +357,45 @@ fun TabPagerScreen(
                         }
                     }
                 }
+            }
+        }
+        if (showSignOutDialog && onSignOut != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    showSignOutDialog = false
+                },
+                title = { Text("ログアウト") },
+                text = { Text("ログアウト時にデータを削除しますか？") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showSignOutDialog = false
+                            onSignOut(true)
+                        },
+                    ) {
+                        Text("削除してログアウト")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showSignOutDialog = false
+                            onSignOut(false)
+                        },
+                    ) {
+                        Text("削除せずログアウト")
+                    }
+                },
+            )
+        }
+        if (isSigningOut) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
             }
         }
     }

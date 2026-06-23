@@ -14,16 +14,13 @@ suspend fun exchangeCard(
     require(currentCard.ownerUid == currentUid) {
         "現在の名刺の所有者ではありません。"
     }
+    val partnerCard = cardRepository.getCard(partnerCardId)
 
     val updatedCurrentCard = currentCard.copy(
         partnerIds = currentCard.partnerIds
-            .plus(partnerCardId)
+            .plus(partnerCard.id)
             .distinct(),
     )
 
     cardRepository.updateCard(updatedCurrentCard)
-    cardRepository.appendPartnerId(
-        cardId = partnerCardId,
-        partnerCardId = currentCardId,
-    )
 }

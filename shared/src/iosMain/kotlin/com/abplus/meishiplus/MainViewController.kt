@@ -10,7 +10,7 @@ import com.abplus.meishiplus.data.model.Account
 
 fun MainViewController(
     authUser: AuthUser? = null,
-    onSignOut: (() -> Unit)? = null,
+    onSignOut: ((Boolean) -> Unit)? = null,
     userRepository: UserRepository? = null,
     cardRepository: CardRepository? = null,
     userViewModel: UserViewModel? = null,

@@ -9,7 +9,7 @@ import kotlinx.coroutines.test.runTest
 
 class CardExchangeTest {
     @Test
-    fun exchangeCard_linksPartnerIdsOnBothCards() = runTest {
+    fun exchangeCard_linksPartnerIdOnCurrentCard() = runTest {
         val cardRepository = InMemoryCardRepository()
         val currentCard = cardRepository.addCard(
             CardEntity(
@@ -36,7 +36,7 @@ class CardExchangeTest {
             cardRepository.getCard(currentCard.id).partnerIds,
         )
         assertEquals(
-            listOf(currentCard.id),
+            emptyList(),
             cardRepository.getCard(partnerCard.id).partnerIds,
         )
     }
@@ -68,7 +68,7 @@ class CardExchangeTest {
             cardRepository.getCard(currentCard.id).partnerIds,
         )
         assertEquals(
-            listOf(currentCard.id),
+            emptyList(),
             cardRepository.getCard(partnerCard.id).partnerIds,
         )
     }

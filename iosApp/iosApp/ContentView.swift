@@ -14,15 +14,15 @@ struct ComposeView: UIViewControllerRepresentable {
     let userRepository: UserRepository
     let cardRepository: CardRepository
     let userViewModel: UserViewModel
-    let onSignOut: () -> Void
+    let onSignOut: (Bool) -> Void
     let onPurchaseCardClick: ((@escaping () -> KotlinUnit) -> Void)
     let onFacebookAuthClick: (@escaping (Account.Facebook) -> Void, @escaping (String) -> Void) -> Void
 
     func makeUIViewController(context: Self.Context) -> UIViewController {
         MainViewControllerKt.MainViewController(
             authUser: authUser,
-            onSignOut: {
-                onSignOut()
+            onSignOut: { shouldDeleteData in
+                onSignOut(shouldDeleteData.boolValue)
             },
             userRepository: userRepository,
             cardRepository: cardRepository,
@@ -73,7 +73,13 @@ struct ContentView: View {
                     userRepository: userRepository,
                     cardRepository: cardRepository,
                     userViewModel: userViewModel,
-                    onSignOut: authModel.signOut,
+                    onSignOut: { shouldDeleteData in
+                        authModel.signOut(
+                            shouldDeleteData: shouldDeleteData,
+                            userRepository: userRepository,
+                            cardRepository: cardRepository
+                        )
+                    },
                     onPurchaseCardClick: { onSuccess in
                         Task {
                             userViewModel.setPurchasing(isPurchasing: true)
@@ -305,12 +311,26 @@ private final class FirebaseAuthModel: ObservableObject {
         }
     }
 
-    func signOut() {
-        do {
-            try Auth.auth().signOut()
-            currentUser = nil
-        } catch {
-            errorMessage = error.localizedDescription
+    func signOut(
+        shouldDeleteData: Bool,
+        userRepository: UserRepository,
+        cardRepository: CardRepository
+    ) {
+        Task {
+            do {
+                if shouldDeleteData, let uid = currentUser?.uid {
+                    let user = try? await userRepository.getUser(id: uid)
+                    let cardIds = Array(Set(user?.cardIds ?? []))
+                    for cardId in cardIds {
+                        try await cardRepository.deleteCard(id: cardId)
+                    }
+                    try await userRepository.deleteUser(id: uid)
+                }
+                try Auth.auth().signOut()
+                currentUser = nil
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }
@@ -330,6 +350,10 @@ private extension Optional where Wrapped == User {
     func toSharedAuthUser() -> AuthUser? {
         self?.toSharedAuthUser()
     }
+}
+
+private extension Bool {
+    var boolValue: Bool { self }
 }
 
 private extension User {

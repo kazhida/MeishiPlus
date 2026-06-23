@@ -19,6 +19,7 @@ data class UserUiState(
     val appUser: AppUser? = null,
     val isAuthResolved: Boolean = false,
     val isLoading: Boolean = false,
+    val isSigningOut: Boolean = false,
     val isPurchasing: Boolean = false,
     val errorMessage: String? = null,
 )
@@ -90,19 +91,33 @@ class UserViewModel(
     }
 
     fun signOut(
+        shouldDeleteData: Boolean = false,
         signOut: suspend () -> Unit,
         toErrorMessage: (Throwable) -> String = { throwable ->
             throwable.message ?: "ログアウトに失敗しました。"
         },
     ) {
         viewModelScope.launch {
+            val uid = _uiState.value.authUser?.uid
+            _uiState.update {
+                it.copy(
+                    isSigningOut = true,
+                    errorMessage = null,
+                )
+            }
             runCatching {
+                if (shouldDeleteData && uid != null) {
+                    userInit.deleteUserWithCards(uid)
+                }
                 signOut()
             }.onSuccess {
                 _uiState.value = UserUiState(isAuthResolved = true)
             }.onFailure { throwable ->
                 _uiState.update {
-                    it.copy(errorMessage = toErrorMessage(throwable))
+                    it.copy(
+                        isSigningOut = false,
+                        errorMessage = toErrorMessage(throwable),
+                    )
                 }
             }
         }

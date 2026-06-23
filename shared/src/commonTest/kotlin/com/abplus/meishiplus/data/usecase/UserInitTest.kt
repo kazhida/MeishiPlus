@@ -106,12 +106,33 @@ class UserInitTest {
         assertEquals(listOf("card-2", "card-3", "card-1"), updatedUser.cardIds)
         assertEquals(updatedUser, userRepository.savedUsers.last())
     }
+
+    @Test
+    fun deleteUserWithCards_deletesUserAndReferencedCards() = runTest {
+        val userRepository = RecordingUserRepository(
+            initialUser = UserEntity(
+                id = "user-1",
+                cardIds = listOf("card-1", "card-2", "card-1"),
+            ),
+        )
+        val cardRepository = RecordingCardRepository()
+        val userInit = UserInit(
+            userRepository = userRepository,
+            cardRepository = cardRepository,
+        )
+
+        userInit.deleteUserWithCards("user-1")
+
+        assertEquals(listOf("card-1", "card-2"), cardRepository.deletedCardIds)
+        assertEquals(listOf("user-1"), userRepository.deletedUserIds)
+    }
 }
 
 private class RecordingUserRepository(
     private val initialUser: UserEntity? = null,
 ) : UserRepository {
     val savedUsers = mutableListOf<UserEntity>()
+    val deletedUserIds = mutableListOf<String>()
 
     override suspend fun addUser(user: UserEntity): UserEntity = user
 
@@ -125,13 +146,16 @@ private class RecordingUserRepository(
         savedUsers += user
     }
 
-    override suspend fun deleteUser(id: String) = Unit
+    override suspend fun deleteUser(id: String) {
+        deletedUserIds += id
+    }
 
     override suspend fun updateUser(user: UserEntity) = saveUser(user)
 }
 
 private class RecordingCardRepository : CardRepository {
     val cards = mutableMapOf<String, CardEntity>()
+    val deletedCardIds = mutableListOf<String>()
     var addCardCalled = false
 
     override suspend fun addCard(card: CardEntity): CardEntity {
@@ -152,6 +176,7 @@ private class RecordingCardRepository : CardRepository {
     }
 
     override suspend fun deleteCard(id: String) {
+        deletedCardIds += id
         cards.remove(id)
     }
 

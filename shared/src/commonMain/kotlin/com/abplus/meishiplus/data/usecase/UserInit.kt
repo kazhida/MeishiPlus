@@ -84,6 +84,19 @@ class UserInit(
         return updatedUser
     }
 
+    suspend fun deleteUserWithCards(uid: String) {
+        val userEntity = runCatching {
+            userRepository.getUser(uid)
+        }.getOrNull()
+        userEntity?.cardIds
+            .orEmpty()
+            .distinct()
+            .forEach { cardId ->
+                cardRepository.deleteCard(cardId)
+            }
+        userRepository.deleteUser(uid)
+    }
+
     private fun createDefaultCard(
         ownerUid: String,
         caption: String,

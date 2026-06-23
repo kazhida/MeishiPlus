@@ -123,11 +123,14 @@ fun AndroidAuthGate(
     uiState.authUser?.let { user ->
         App(
             authUser = user,
-            onSignOut = {
-                userViewModel.signOut(signOut = {
-                    auth.signOut()
-                    credentialManager.clearCredentialState(ClearCredentialStateRequest())
-                })
+            onSignOut = { shouldDeleteData ->
+                userViewModel.signOut(
+                    shouldDeleteData = shouldDeleteData,
+                    signOut = {
+                        auth.signOut()
+                        credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                    },
+                )
             },
             appUser = uiState.appUser,
             errorMessage = uiState.errorMessage,

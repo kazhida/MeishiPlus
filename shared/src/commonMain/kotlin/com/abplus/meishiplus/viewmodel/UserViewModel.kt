@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class UserUiState(
     val authUser: AuthUser? = null,
@@ -30,10 +32,19 @@ class UserViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UserUiState())
     val uiState: StateFlow<UserUiState> = _uiState.asStateFlow()
+    private val authOperationMutex = Mutex()
 
     fun setAuthUser(authUser: AuthUser?) {
-        val currentUser = _uiState.value.authUser
-        if (_uiState.value.isAuthResolved && currentUser?.uid == authUser?.uid) return
+        val state = _uiState.value
+        if (state.isSigningOut) return
+        val currentUser = state.authUser
+        if (
+            state.isAuthResolved &&
+            currentUser?.uid == authUser?.uid &&
+            (state.appUser != null || state.isLoading)
+        ) {
+            return
+        }
 
         if (authUser == null) {
             _uiState.value = UserUiState(isAuthResolved = true)
@@ -72,6 +83,7 @@ class UserViewModel(
                 _uiState.update {
                     it.copy(
                         authUser = authUser,
+                        appUser = null,
                         isAuthResolved = true,
                         isLoading = true,
                         errorMessage = null,
@@ -98,26 +110,30 @@ class UserViewModel(
         },
     ) {
         viewModelScope.launch {
-            val uid = _uiState.value.authUser?.uid
-            _uiState.update {
-                it.copy(
-                    isSigningOut = true,
-                    errorMessage = null,
-                )
-            }
-            runCatching {
-                if (shouldDeleteData && uid != null) {
-                    userInit.deleteUserWithCards(uid)
-                }
-                signOut()
-            }.onSuccess {
-                _uiState.value = UserUiState(isAuthResolved = true)
-            }.onFailure { throwable ->
+            authOperationMutex.withLock {
+                val uid = _uiState.value.authUser?.uid
                 _uiState.update {
                     it.copy(
-                        isSigningOut = false,
-                        errorMessage = toErrorMessage(throwable),
+                        appUser = null,
+                        isLoading = false,
+                        isSigningOut = true,
+                        errorMessage = null,
                     )
+                }
+                runCatching {
+                    if (shouldDeleteData && uid != null) {
+                        userInit.deleteUserWithCards(uid)
+                    }
+                    signOut()
+                }.onSuccess {
+                    _uiState.value = UserUiState(isAuthResolved = true)
+                }.onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isSigningOut = false,
+                            errorMessage = toErrorMessage(throwable),
+                        )
+                    }
                 }
             }
         }
@@ -243,29 +259,31 @@ class UserViewModel(
         val authUser = _uiState.value.authUser ?: return
 
         viewModelScope.launch(Dispatchers.Default) {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    errorMessage = null,
-                )
-            }
-
-            runCatching {
-                userInit(authUser)
-            }.onSuccess { appUser ->
+            authOperationMutex.withLock {
                 _uiState.update {
                     it.copy(
-                        appUser = appUser,
-                        isLoading = false,
+                        isLoading = true,
                         errorMessage = null,
                     )
                 }
-            }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = throwable.message ?: "ユーザー情報を再取得できませんでした。",
-                    )
+
+                runCatching {
+                    userInit(authUser)
+                }.onSuccess { appUser ->
+                    _uiState.update {
+                        it.copy(
+                            appUser = appUser,
+                            isLoading = false,
+                            errorMessage = null,
+                        )
+                    }
+                }.onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = throwable.message ?: "ユーザー情報を再取得できませんでした。",
+                        )
+                    }
                 }
             }
         }
@@ -289,30 +307,32 @@ class UserViewModel(
 
     private fun loadAppUser(authUser: AuthUser) {
         viewModelScope.launch(Dispatchers.Default) {
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    errorMessage = null,
-                )
-            }
-
-            runCatching {
-                userInit(authUser)
-            }.onSuccess { appUser ->
+            authOperationMutex.withLock {
                 _uiState.update {
                     it.copy(
-                        appUser = appUser,
-                        isLoading = false,
+                        isLoading = true,
                         errorMessage = null,
                     )
                 }
-            }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(
-                        appUser = null,
-                        isLoading = false,
-                        errorMessage = throwable.message ?: "ユーザー情報を取得できませんでした。",
-                    )
+
+                runCatching {
+                    userInit(authUser)
+                }.onSuccess { appUser ->
+                    _uiState.update {
+                        it.copy(
+                            appUser = appUser,
+                            isLoading = false,
+                            errorMessage = null,
+                        )
+                    }
+                }.onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            appUser = null,
+                            isLoading = false,
+                            errorMessage = throwable.message ?: "ユーザー情報を取得できませんでした。",
+                        )
+                    }
                 }
             }
         }

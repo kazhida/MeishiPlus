@@ -5,6 +5,8 @@ import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.data.repositories.CardRepository
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
 
 class FireStoreCardRepository(
@@ -22,10 +24,15 @@ class FireStoreCardRepository(
     }
 
     override suspend fun getCard(id: String): CardEntity =
-        cards.document(id)
-            .get()
-            .await()
-            .toCardEntity()
+        runCatching {
+            cards.document(id)
+                .get(Source.SERVER)
+                .await()
+        }.getOrElse {
+            cards.document(id)
+                .get()
+                .await()
+        }.toCardEntity()
             ?.withInitializedLayout()
             ?: error("Card not found: $id")
 
@@ -36,6 +43,13 @@ class FireStoreCardRepository(
             getCard(id)
         }
     }
+
+    override suspend fun getCardsByOwnerUid(ownerUid: String): List<CardEntity> =
+        queryCardsByOwnerUid(ownerUid)
+            .documents
+            .mapNotNull { document ->
+                document.toCardEntity()?.withInitializedLayout()
+            }
 
     override suspend fun saveCard(card: CardEntity) {
         cards.document(card.id)
@@ -64,6 +78,15 @@ class FireStoreCardRepository(
 
     private companion object {
         const val CARDS_COLLECTION = "cards"
+    }
+
+    private suspend fun queryCardsByOwnerUid(ownerUid: String): QuerySnapshot {
+        val query = cards.whereEqualTo("ownerUid", ownerUid)
+        return runCatching {
+            query.get(Source.SERVER).await()
+        }.getOrElse {
+            query.get().await()
+        }
     }
 }
 

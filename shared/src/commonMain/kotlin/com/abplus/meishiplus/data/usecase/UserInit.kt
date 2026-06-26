@@ -85,11 +85,8 @@ class UserInit(
     }
 
     suspend fun deleteUserWithCards(uid: String) {
-        val userEntity = runCatching {
-            userRepository.getUser(uid)
-        }.getOrNull()
-        userEntity?.cardIds
-            .orEmpty()
+        cardRepository.getCardsByOwnerUid(uid)
+            .map { card -> card.id }
             .distinct()
             .forEach { cardId ->
                 cardRepository.deleteCard(cardId)

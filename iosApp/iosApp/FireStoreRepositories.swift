@@ -17,7 +17,12 @@ final class FireStoreCardRepository: CardRepository {
     }
 
     func getCard(id: String) async throws -> CardEntity {
-        let snapshot = try await cards.document(id).getDocument()
+        let snapshot: DocumentSnapshot
+        do {
+            snapshot = try await cards.document(id).getDocument(source: .server)
+        } catch {
+            snapshot = try await cards.document(id).getDocument()
+        }
         guard let data = snapshot.data() else {
             throw RepositoryError.documentNotFound("cards/\(id)")
         }
@@ -35,6 +40,19 @@ final class FireStoreCardRepository: CardRepository {
             cards.append(try await getCard(id: id))
         }
         return cards
+    }
+
+    func getCardsByOwnerUid(ownerUid: String) async throws -> [CardEntity] {
+        let query = cards.whereField("ownerUid", isEqualTo: ownerUid)
+        let snapshot: QuerySnapshot
+        do {
+            snapshot = try await query.getDocuments(source: .server)
+        } catch {
+            snapshot = try await query.getDocuments()
+        }
+        return snapshot.documents.map { document in
+            Self.cardEntity(id: document.documentID, data: document.data())
+        }
     }
 
     func saveCard(card: CardEntity) async throws {
@@ -148,7 +166,12 @@ final class FireStoreUserRepository: UserRepository {
     }
 
     func getUser(id: String) async throws -> UserEntity {
-        let snapshot = try await users.document(id).getDocument()
+        let snapshot: DocumentSnapshot
+        do {
+            snapshot = try await users.document(id).getDocument(source: .server)
+        } catch {
+            snapshot = try await users.document(id).getDocument()
+        }
         guard let data = snapshot.data() else {
             throw RepositoryError.documentNotFound("users/\(id)")
         }

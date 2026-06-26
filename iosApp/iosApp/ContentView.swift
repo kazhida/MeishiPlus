@@ -4,6 +4,7 @@ import FacebookCore
 import FacebookLogin
 import FirebaseAuth
 import FirebaseCore
+import FirebaseFirestore
 import Security
 import Shared
 import SwiftUI
@@ -110,6 +111,11 @@ struct ContentView: View {
                     onAppleSignInRequest: authModel.prepareAppleSignInRequest,
                     onAppleSignInCompletion: authModel.handleAppleSignInCompletion
                 )
+            }
+        }
+        .onChange(of: authModel.currentUser?.uid) { _, newUid in
+            if newUid == nil {
+                userViewModel.setAuthUser(authUser: nil)
             }
         }
     }
@@ -319,17 +325,33 @@ private final class FirebaseAuthModel: ObservableObject {
         Task {
             do {
                 if shouldDeleteData, let uid = currentUser?.uid {
-                    let user = try? await userRepository.getUser(id: uid)
-                    let cardIds = Array(Set(user?.cardIds ?? []))
+                    let ownedCards = try await cardRepository.getCardsByOwnerUid(ownerUid: uid)
+                    let cardIds = Array(Set(ownedCards.map(\.id)))
                     for cardId in cardIds {
                         try await cardRepository.deleteCard(id: cardId)
                     }
                     try await userRepository.deleteUser(id: uid)
+                    let firestore = Firestore.firestore()
+                    try await firestore.waitForPendingWritesAsync()
                 }
                 try Auth.auth().signOut()
                 currentUser = nil
             } catch {
                 errorMessage = error.localizedDescription
+            }
+        }
+    }
+}
+
+private extension Firestore {
+    func waitForPendingWritesAsync() async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            waitForPendingWrites { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: ())
+                }
             }
         }
     }

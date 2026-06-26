@@ -6,6 +6,7 @@ interface CardRepository {
     suspend fun addCard(card: CardEntity): CardEntity
     suspend fun getCard(id: String): CardEntity
     suspend fun getCards(cardIds: List<String>): List<CardEntity>
+    suspend fun getCardsByOwnerUid(ownerUid: String): List<CardEntity>
     suspend fun saveCard(card: CardEntity)
     suspend fun deleteCard(id: String)
     suspend fun updateCard(card: CardEntity)

@@ -108,14 +108,12 @@ class UserInitTest {
     }
 
     @Test
-    fun deleteUserWithCards_deletesUserAndReferencedCards() = runTest {
-        val userRepository = RecordingUserRepository(
-            initialUser = UserEntity(
-                id = "user-1",
-                cardIds = listOf("card-1", "card-2", "card-1"),
-            ),
-        )
+    fun deleteUserWithCards_deletesUserAndOwnedCards() = runTest {
+        val userRepository = RecordingUserRepository()
         val cardRepository = RecordingCardRepository()
+        cardRepository.cards["card-1"] = CardEntity.default().copy(id = "card-1", ownerUid = "user-1")
+        cardRepository.cards["card-2"] = CardEntity.default().copy(id = "card-2", ownerUid = "user-1")
+        cardRepository.cards["card-3"] = CardEntity.default().copy(id = "card-3", ownerUid = "other-user")
         val userInit = UserInit(
             userRepository = userRepository,
             cardRepository = cardRepository,
@@ -170,6 +168,9 @@ private class RecordingCardRepository : CardRepository {
 
     override suspend fun getCards(cardIds: List<String>): List<CardEntity> =
         cardIds.map { id -> getCard(id) }
+
+    override suspend fun getCardsByOwnerUid(ownerUid: String): List<CardEntity> =
+        cards.values.filter { card -> card.ownerUid == ownerUid }
 
     override suspend fun saveCard(card: CardEntity) {
         cards[card.id] = card

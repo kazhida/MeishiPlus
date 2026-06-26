@@ -5,6 +5,7 @@ import com.abplus.meishiplus.data.model.Account
 import com.abplus.meishiplus.data.repositories.UserRepository
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
 
 class FireStoreUserRepository(
@@ -22,10 +23,15 @@ class FireStoreUserRepository(
     }
 
     override suspend fun getUser(id: String): UserEntity =
-        users.document(id)
-            .get()
-            .await()
-            .toUserEntity()
+        runCatching {
+            users.document(id)
+                .get(Source.SERVER)
+                .await()
+        }.getOrElse {
+            users.document(id)
+                .get()
+                .await()
+        }.toUserEntity()
             ?: error("User not found: $id")
 
     override suspend fun saveUser(user: UserEntity) {

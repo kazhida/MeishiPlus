@@ -113,6 +113,9 @@ private class InMemoryCardRepository : CardRepository {
     override suspend fun getCards(cardIds: List<String>): List<CardEntity> =
         cardIds.map { id -> getCard(id) }
 
+    override suspend fun getCardsByOwnerUid(ownerUid: String): List<CardEntity> =
+        cards.values.filter { card -> card.ownerUid == ownerUid }
+
     override suspend fun saveCard(card: CardEntity) {
         cards[card.id] = card.withInitializedLayout()
     }

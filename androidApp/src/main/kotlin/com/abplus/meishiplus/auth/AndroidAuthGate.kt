@@ -18,10 +18,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +63,7 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -83,10 +87,12 @@ fun AndroidAuthGate(
 ) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
+    val firestore = remember { FirebaseFirestore.getInstance() }
     val credentialManager = remember { CredentialManager.create(context) }
     val purchaseManager = remember(context) { AndroidCardPurchaseManager(context) }
     val coroutineScope = rememberCoroutineScope()
     val uiState by userViewModel.uiState.collectAsState()
+    var shouldReloadAfterNextSignIn by remember { mutableStateOf(false) }
 
     DisposableEffect(auth, userViewModel) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -110,6 +116,21 @@ fun AndroidAuthGate(
         }
     }
 
+    LaunchedEffect(
+        uiState.authUser?.uid,
+        uiState.isLoading,
+        shouldReloadAfterNextSignIn,
+    ) {
+        if (
+            shouldReloadAfterNextSignIn &&
+            uiState.authUser != null &&
+            !uiState.isLoading
+        ) {
+            shouldReloadAfterNextSignIn = false
+            userViewModel.reloadCurrentUser()
+        }
+    }
+
     if (!uiState.isAuthResolved) {
         AuthLoadingScreen()
         return
@@ -124,9 +145,19 @@ fun AndroidAuthGate(
         App(
             authUser = user,
             onSignOut = { shouldDeleteData ->
+                if (shouldDeleteData) {
+                    shouldReloadAfterNextSignIn = true
+                }
                 userViewModel.signOut(
                     shouldDeleteData = shouldDeleteData,
                     signOut = {
+                        if (shouldDeleteData) {
+                            runCatching {
+                                firestore.waitForPendingWrites().await()
+                            }
+                            firestore.terminate().await()
+                            firestore.clearPersistence().await()
+                        }
                         auth.signOut()
                         credentialManager.clearCredentialState(ClearCredentialStateRequest())
                     },
